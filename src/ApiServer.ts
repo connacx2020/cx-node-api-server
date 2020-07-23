@@ -11,10 +11,12 @@ const ppcRoutes = require('./routes/ppcRoutes');
 pool.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";');
 pool.query(`
     CREATE TABLE IF NOT EXISTS users (id uuid DEFAULT uuid_generate_v4(),
-    username VARCHAR NOT NULL,
+    username VARCHAR UNIQUE NOT NULL,
     password json NOT NULL,
     name VARCHAR NOT NULL,
     client VARCHAR NOT NULL,
+    token VARCHAR DEFAULT null,
+    tokenExpiryTime TIMESTAMP DEFAULT null,
     PRIMARY KEY (id))`
 );
 

@@ -6,7 +6,7 @@ var router = express.Router();
 router.route('/register')
     .post(controller.register);
 
-router.route('/testdb')
-    .get(controller.testdb);
+router.route('/login')
+    .post(controller.login);
     
 module.exports = router;
