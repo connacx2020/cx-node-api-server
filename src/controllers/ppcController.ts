@@ -7,5 +7,3 @@ exports.ppc = function (req: any, res: any) {
         }
     });
 }
-
-

@@ -22,14 +22,9 @@ exports.login = async (req: any, res: any) => {
             const currentPassword = result.rows[0].password;
             const decrypted = await decrypt(currentPassword);
             if (password === decrypted) {
-                console.log("password match!");
-
                 const jwtToken = signUser(username);
-                const tokenExpiryTime = new Date().getTime();
-                //  + jwtToken.jwtExpirySeconds * 1000;
-                const updateToken = client.query(`UPDATE users SET token=$1, tokenExpiryTime=$2 WHERE username=$3`, [jwtToken.token, tokenExpiryTime, username]);
-                console.log("UpdateToken:", updateToken);
-
+                const tokenExpireTime = new Date(new Date().getTime() + jwtToken.jwtExpirySeconds * 1000);
+                client.query(`UPDATE users SET token=$1, tokenExpiryTime=$2 WHERE username=$3`, [jwtToken.token, tokenExpireTime, username]);
                 res.cookie("token", jwtToken.token, { maxAge: jwtToken.jwtExpirySeconds * 1000 });
                 res.status(200).json({
                     status: 200,
@@ -39,7 +34,7 @@ exports.login = async (req: any, res: any) => {
             } else {
                 res.status(200).json({
                     status: 200,
-                    message: "Password dismatch!"
+                    message: "Password mismatch!"
                 }).end();
             }
         }
@@ -62,6 +57,6 @@ exports.register = async (req: any, res: any) => {
                 username: username,
                 name: name
             }
-        });
+        }).end();
     });
 }

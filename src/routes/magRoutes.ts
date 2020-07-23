@@ -7,4 +7,5 @@ router.route('/mag')
     
 router.route('/testdb')
     .get(controller.testdb);
+
 module.exports = router;

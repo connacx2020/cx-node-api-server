@@ -5,5 +5,4 @@ var router = express.Router();
 router.route('/ppc')
     .get(controller.ppc);
 
-    
 module.exports = router;

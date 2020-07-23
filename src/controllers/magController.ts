@@ -15,4 +15,3 @@ exports.testdb = (req: any, res: any) => {
         res.status(200).json(results.rows);
     });
 }
-
