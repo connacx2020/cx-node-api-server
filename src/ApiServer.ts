@@ -15,8 +15,6 @@ pool.query(`
     password json NOT NULL,
     name VARCHAR NOT NULL,
     client VARCHAR NOT NULL,
-    token VARCHAR DEFAULT null,
-    tokenExpiryTime TIMESTAMP DEFAULT null,
     PRIMARY KEY (id))`
 );
 

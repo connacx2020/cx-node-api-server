@@ -1,6 +1,29 @@
 import pool from '../utils/dbClient';
 const { encrypt, decrypt } = require('../utils/crypto');
-const { signUser } = require('../utils/jwt');
+const { signUser, validateToken } = require('../utils/jwt');
+
+exports.validateToken = async (req:any, res:any) => {
+    const {token} = req.body;
+    if(!token) {
+        res.status(400).json({
+            status: 400,
+            message: 'Token invalid!'
+        }).end();
+    }
+    const result = await validateToken(token);
+    if(result && result!==null){
+        res.status(200).json({
+            status: 200,
+            message:"Token valid!",
+            result
+        });
+    } else {
+        res.status(400).json({
+            status: 400,
+            message: 'Token expired!'
+        });
+    }
+}
 
 exports.login = async (req: any, res: any) => {
     const { username, password } = req.body;
@@ -22,18 +45,15 @@ exports.login = async (req: any, res: any) => {
             const currentPassword = result.rows[0].password;
             const decrypted = await decrypt(currentPassword);
             if (password === decrypted) {
-                const jwtToken = signUser(username);
-                const tokenExpireTime = new Date(new Date().getTime() + jwtToken.jwtExpirySeconds * 1000);
-                client.query(`UPDATE users SET token=$1, tokenExpiryTime=$2 WHERE username=$3`, [jwtToken.token, tokenExpireTime, username]);
-                res.cookie("token", jwtToken.token, { maxAge: jwtToken.jwtExpirySeconds * 1000 });
+                const jwtToken = signUser(result.rows[0].id);
                 res.status(200).json({
                     status: 200,
                     message: "Login Successful!",
                     token: jwtToken.token
                 }).end();
             } else {
-                res.status(200).json({
-                    status: 200,
+                res.status(400).json({
+                    status: 400,
                     message: "Password mismatch!"
                 }).end();
             }
