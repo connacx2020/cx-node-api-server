@@ -11,4 +11,13 @@ router.route('/getMonthlyMoodAllEntrance')
 router.route('/getEntranceData')
     .get(controller.getEntranceData);
 
+router.route('/getMonthlyMoodPercentAllEntrance')
+    .get(controller.getMonthlyMoodPercentAllEntrance);
+
+router.route('/getMonthlyGenderPercentAllEntrance')
+    .get(controller.getMonthlyGenderPercentAllEntrance);
+
+router.route('/getMonthlyAgePercentAllEntrance')
+    .get(controller.getMonthlyAgePercentAllEntrance);
+
 module.exports = router;

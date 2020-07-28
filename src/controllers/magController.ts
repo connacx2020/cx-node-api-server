@@ -106,40 +106,136 @@ exports.getMonthlyMoodAllEntrance = (req: any, res: any) => {
     }
 }
 
-exports.getMoodPercentAllEntrance = (req:any, res:any) => {
+exports.getMonthlyMoodPercentAllEntrance = (req: any, res: any) => {
     pool.query(`
     SELECT CASE
            WHEN key = 'is_feeling_neutral' THEN 'Neutral'
            WHEN key = 'is_feeling_angry' THEN 'Angry'
            WHEN key = 'is_feeling_sad' THEN 'Sad'
            WHEN key = 'is_feeling_happy' THEN 'Happy'
-       END AS "Mood",
-       SUM(long_v) AS "SUM(long_v)"
-FROM
-  (SELECT entity_id,
-          key,
-          TO_TIMESTAMP(TRUNC(CAST(ts AS bigint) / 1000)) AS datetime,
-          long_v
-   FROM public.ts_kv
-   WHERE entity_id IN ('1ea2b7fc3fa406083816530eccc01ed',
-                       '1ea2b7fbabb75f083816530eccc01ed',
-                       '1ea2a3e774ee6e083816530eccc01ed',
-                       '1ea2a319d9a986083816530eccc01ed')
-        AND key LIKE 'is_%') AS expr_qry
-    WHERE datetime >= '2020-05-27 00:00:00'
-    AND datetime <= '2020-07-27 00:00:00'
-    AND CASE
-          WHEN key = 'is_feeling_neutral' THEN 'Neutral'
-          WHEN key = 'is_feeling_angry' THEN 'Angry'
-          WHEN key = 'is_feeling_sad' THEN 'Sad'
-          WHEN key = 'is_feeling_happy' THEN 'Happy'
-      END != '0'
-    GROUP BY CASE
+        END AS "Mood",
+        SUM(long_v) AS "SUM(long_v)"
+    FROM
+    (SELECT entity_id,
+        key,
+        TO_TIMESTAMP(TRUNC(CAST(ts AS bigint) / 1000)) AS datetime,
+        long_v
+        FROM ts_kv_latest
+        WHERE entity_id IN ('1ea2b7fc3fa406083816530eccc01ed',
+                    '1ea2b7fbabb75f083816530eccc01ed',
+                    '1ea2a3e774ee6e083816530eccc01ed',
+                    '1ea2a319d9a986083816530eccc01ed')
+        AND key LIKE 'is_feeling_%') AS expr_qry
+        WHERE datetime >= '2019-01-01 00:00:00'
+        AND datetime <= '2020-07-28 00:00:00'
+        GROUP BY CASE
              WHEN key = 'is_feeling_neutral' THEN 'Neutral'
              WHEN key = 'is_feeling_angry' THEN 'Angry'
              WHEN key = 'is_feeling_sad' THEN 'Sad'
              WHEN key = 'is_feeling_happy' THEN 'Happy'
-         END
-    ORDER BY "SUM(long_v)" DESC
-    LIMIT 50000;`);
+        END
+        ORDER BY "SUM(long_v)" DESC     
+        LIMIT 50000;`, (error: any, results: any) => {
+        if (error) {
+            res.status(400).json({
+                status: 400,
+                message: "Error"
+            })
+        }
+        if (results) {
+            res.status(200).json({
+                status: 200,
+                message: "Successful!",
+                data: results.rows
+            });
+        }
+    });
+}
+
+exports.getMonthlyGenderPercentAllEntrance = (req: any, res: any) => {
+    pool.query(`
+    SELECT CASE
+           WHEN key = 'is_sex_male' THEN 'Male'
+           WHEN key = 'is_sex_female' THEN 'Female'
+       END AS "Gender",
+       SUM(long_v) AS "SUM(long_v)"
+    FROM
+    (SELECT entity_id,
+        key,
+        TO_TIMESTAMP(TRUNC(CAST(ts AS bigint) / 1000)) AS datetime,
+        long_v
+        FROM ts_kv_latest
+        WHERE entity_id IN ('1ea2b7fc3fa406083816530eccc01ed',
+                    '1ea2b7fbabb75f083816530eccc01ed',
+                    '1ea2a3e774ee6e083816530eccc01ed',
+                    '1ea2a319d9a986083816530eccc01ed')
+        AND key LIKE 'is_sex_%') AS expr_qry
+        WHERE datetime >= '2019-01-01 00:00:00'
+        AND datetime <= '2020-07-28 00:00:00'
+        GROUP BY CASE
+             WHEN key = 'is_sex_male' THEN 'Male'
+             WHEN key = 'is_sex_female' THEN 'Female'
+        END
+        ORDER BY "SUM(long_v)" DESC    
+        LIMIT 50000;`, (error: any, results: any) => {
+        if (error) {
+            res.status(400).json({
+                status: 400,
+                message: "Error"
+            });
+        }
+        if (results) {
+            res.status(200).json({
+                status: 200,
+                message: "Successful!",
+                data: results.rows
+            });
+        }
+    });
+}
+
+exports.getMonthlyAgePercentAllEntrance = (req: any, res: any) => {
+    pool.query(`
+    SELECT CASE
+           WHEN key = 'is_age_teenager' THEN 'Children'
+           WHEN key = 'is_age_young' THEN 'Young'
+           WHEN key = 'is_age_middle' THEN 'Middle'
+           WHEN key = 'is_age_senior' THEN 'Senior'
+       END AS "AGE",
+       SUM(long_v) AS "SUM(long_v)"
+    FROM
+    (SELECT entity_id,
+        key,
+        TO_TIMESTAMP(TRUNC(CAST(ts AS bigint) / 1000)) AS datetime,
+        long_v
+        FROM ts_kv_latest
+        WHERE entity_id IN ('1ea2b7fc3fa406083816530eccc01ed',
+                    '1ea2b7fbabb75f083816530eccc01ed',
+                    '1ea2a3e774ee6e083816530eccc01ed',
+                    '1ea2a319d9a986083816530eccc01ed')
+        AND key LIKE 'is_age_%') AS expr_qry
+        WHERE datetime >= '2019-01-01 00:00:00'
+        AND datetime <= '2020-07-28 00:00:00'
+        GROUP BY CASE
+             WHEN key = 'is_age_teenager' THEN 'Children'
+             WHEN key = 'is_age_young' THEN 'Young'
+             WHEN key = 'is_age_middle' THEN 'Middle'
+             WHEN key = 'is_age_senior' THEN 'Senior'
+        END
+        ORDER BY "SUM(long_v)" DESC    
+        LIMIT 50000;`, (error: any, results: any) => {
+        if (error) {
+            res.status(400).json({
+                status: 400,
+                message: "Error"
+            });
+        }
+        if (results) {
+            res.status(200).json({
+                status: 200,
+                message: "Successful!",
+                data: results.rows
+            });
+        }
+    });
 }
