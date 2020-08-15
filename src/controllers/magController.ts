@@ -239,3 +239,65 @@ exports.getMonthlyAgePercentAllEntrance = (req: any, res: any) => {
         }
     });
 }
+
+exports.getMAGByDateTimeRange = (req: any, res: any) => {
+    const { type, door, date1, date2 } = req.body;
+    var query = '';
+    var is_type = '';
+    switch (type) {
+        case 'mood': is_type = 'is_feeling_%'; break;
+        case 'age': is_type = 'is_age_%'; break;
+        case 'gender': is_type = 'is_gender_%'; break;
+        default: is_type = 'is_feeling_%'; break;
+    }
+    const input = [is_type, date1, date2];
+    if (door.toLowerCase() === 'all') {
+        query = `
+        SELECT DATE_TRUNC('day', datetime) AT TIME ZONE 'UTC' AS __timestamp,
+            SUM(long_v) AS "SUM(long_v)"
+        FROM
+        (SELECT entity_id,
+            key,
+            TO_TIMESTAMP(TRUNC(CAST(ts AS bigint) / 1000)) AS datetime,
+            long_v
+        FROM public.ts_kv
+        WHERE entity_id IN ('1ea2b7fc3fa406083816530eccc01ed',
+            '1ea2b7fbabb75f083816530eccc01ed',
+            '1ea2a3e774ee6e083816530eccc01ed',
+            '1ea2a319d9a986083816530eccc01ed')
+        AND key LIKE $1) AS expr_qry
+        WHERE datetime >= $2
+        AND datetime <= $3
+        AND CASE 
+            WHEN
+            AND CASE
+            WHEN key = 'is_feeling_neutral' THEN 'Neutral'
+            WHEN key = 'is_feeling_angry' THEN 'Angry'
+            WHEN key = 'is_feeling_sad' THEN 'Sad'
+            WHEN key = 'is_feeling_happy' THEN 'Happy'
+        END != '0'
+  GROUP BY CASE
+               WHEN key = 'is_feeling_neutral' THEN 'Neutral'
+               WHEN key = 'is_feeling_angry' THEN 'Angry'
+               WHEN key = 'is_feeling_sad' THEN 'Sad'
+               WHEN key = 'is_feeling_happy' THEN 'Happy'
+           END
+        ORDER BY __timestamp DESC
+        LIMIT 50000;`
+    } else {
+        query = `
+
+        `;
+    }
+
+    pool.query(query, input, (error: any, results: any) => {
+        if (error) {
+            throw error;
+        }
+        res.status(200).json({
+            status: 200,
+            message: 'Successful!',
+            data: results.rows
+        }).end();
+    });
+}

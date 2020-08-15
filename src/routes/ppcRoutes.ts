@@ -17,4 +17,7 @@ router.route('/getCircleEntranceMonthlyPPC')
 router.route('/getB2EntranceMonthlyPPC')
     .get(controller.getB2EntranceMonthlyPPC);
 
+router.route('/getPPCByDateTimeRange')
+    .get(controller.getPPCByDateTimeRange);
+
 module.exports = router;

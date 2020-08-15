@@ -20,4 +20,7 @@ router.route('/getMonthlyGenderPercentAllEntrance')
 router.route('/getMonthlyAgePercentAllEntrance')
     .get(controller.getMonthlyAgePercentAllEntrance);
 
+router.route('/getMAGByDateTimeRange')
+    .get(controller.getMAGByDateTimeRange);
+
 module.exports = router;
