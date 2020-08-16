@@ -113,8 +113,14 @@ exports.getPPCByDateTimeRange = (req: any, res: any) => {
     const { door, date1, date2 } = req.body;
     pool.query(
         `
-        SELECT
-            SUM(_data) AS "SUM(_data)"
+        SELECT datetime,
+            SUM(_data) AS "SUM(_data)",
+            CASE
+                WHEN door = 'visitor_count_door1' THEN 'East'
+                WHEN door = 'visitor_count_door2' THEN 'West'
+                WHEN door = 'visitor_count_door3' THEN 'Circle'
+                WHEN door='visitor_count_door4' THEN 'B2'
+            END AS "DOOR"
         FROM
         (select entity_id,
             key as door,
@@ -124,11 +130,12 @@ exports.getPPCByDateTimeRange = (req: any, res: any) => {
             from ts_kv
             where entity_id in ('1ea296c156d41b083816530eccc01ed',
                 '1ea297011afa0a083816530eccc01ed')
-                and key IN ('visitor_count_door1',
+            and key IN ('visitor_count_door1',
                 'visitor_count_door2',
                 'visitor_count_door3',
                 'visitor_count_door4',
                 'outsideMaxTemp')
+            group by key, entity_id, long_v, ts
             order by datetime desc) AS expr_qry
         WHERE datetime >= $2
         AND datetime <= $3
@@ -139,15 +146,16 @@ exports.getPPCByDateTimeRange = (req: any, res: any) => {
           WHEN door='visitor_count_door4' THEN 'B2'
         END IN ($1)
         AND CASE
-          WHEN door = 'visitor_count_door1' THEN 'East'
-          WHEN door = 'visitor_count_door2' THEN 'West'
-          WHEN door = 'visitor_count_door3' THEN 'Circle'
-          WHEN door='visitor_count_door4' THEN 'B2'
+            WHEN door = 'visitor_count_door1' THEN 'East'
+            WHEN door = 'visitor_count_door2' THEN 'West'
+            WHEN door = 'visitor_count_door3' THEN 'Circle'
+            WHEN door='visitor_count_door4' THEN 'B2'
         END IN ('West',
               'Circle',
               'B2',
               'East')
-        ORDER BY "SUM(_data)" DESC
+        GROUP BY door, datetime
+        ORDER BY datetime DESC
         LIMIT 50000;
         `, [door, date1, date2], (error: any, results: any )=> {
             if (error) {
