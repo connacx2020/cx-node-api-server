@@ -2,12 +2,13 @@
   "name": "cx-node-api-server",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "ApiServer.ts",
   "scripts": {
     "test": "none",
     "start-dev": "nodemon --config \"./nodemon.json\"/",
     "build": "rm -rf ./build/ && tsc",
-    "start": "nodemon build/index.js"
+    "start": "nodemon build/ApiServer.ts",
+    "start:prod" : "nodemon dist/ApiServer.ts"
   },
   "repository": {
     "type": "git",
