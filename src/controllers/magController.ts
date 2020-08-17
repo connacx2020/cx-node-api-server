@@ -2,8 +2,6 @@ import pool from '../utils/dbClient';
 
 exports.getMAGByDateTimeRange = (req: any, res: any) => {
     const { type, door, date1, date2, time1, time2 } = req.query;
-    console.log("Type:", type);
-    console.log(`Door:${door}, Date1:${date1}, Date2: ${date2}, Time1: ${time1}, Time2: ${time2}`)
     var is_type = '';
     switch (type.toLowerCase()) {
         case 'mood': is_type = 'is_feeling_%'; break;

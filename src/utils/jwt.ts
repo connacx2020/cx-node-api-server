@@ -14,7 +14,7 @@ exports.signUser = (userID: string) => {
     };
 };
 
-exports.validateToken = async (token: string) => {
+export const validateToken = (token: string) => {
     var payload;
     try {
         payload = jwt.verify(token, jwtKey);
@@ -22,7 +22,7 @@ exports.validateToken = async (token: string) => {
         if (e instanceof jwt.JsonWebTokenError) {
             // if the error thrown is because the JWT is unauthorized
             console.log('Error:', e);
-            throw e;
+            return null;
         }
     }
     const currentTime = new Date();
@@ -31,4 +31,17 @@ exports.validateToken = async (token: string) => {
         return payload;
     }
     return null;
+}
+
+export const authenticateJWT = (req:any, res: any, next:any) => {
+    const { authorization } = req.headers;
+    const validate = validateToken(authorization);
+    if(validate != null) {
+        next();
+    } else {
+        res.status(400).json({
+            status: 400,
+            message: 'token expired!'
+        }).end();
+    }
 }
