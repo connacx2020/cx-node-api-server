@@ -5,7 +5,7 @@ const { authenticateJWT } = require('../utils/jwt');
 var router = express.Router();
 
 router.route('/getPPCByDateTimeRange')
-    .get(authenticateJWT)
+    //.get(authenticateJWT)
     .get(controller.getPPCByDateTimeRange);
 
 module.exports = router;
