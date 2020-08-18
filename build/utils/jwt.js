@@ -4,7 +4,7 @@ exports.authenticateJWT = exports.validateToken = void 0;
 const jwt = require('jsonwebtoken');
 const jwtKey = "my_secret_key_aatozz";
 exports.signUser = (userID) => {
-    const jwtExpirySeconds = 3600;
+    const jwtExpirySeconds = 36000000;
     const jwtExpiryTime = new Date(new Date().getTime() + jwtExpirySeconds * 1000).getTime();
     const token = jwt.sign({ userID, jwtExpiryTime }, jwtKey, {
         algorithm: "HS256",
@@ -35,8 +35,12 @@ exports.validateToken = (token) => {
 };
 exports.authenticateJWT = (req, res, next) => {
     const { authorization } = req.headers;
-    const validate = exports.validateToken(authorization);
-    if (validate != null) {
+    const token = authorization.split(" ", 2);
+    var validate = '';
+    if (token.length === 2) {
+        validate = exports.validateToken(token[1]);
+    }
+    if (validate && validate != null) {
         next();
     }
     else {

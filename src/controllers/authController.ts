@@ -1,6 +1,6 @@
 const { decrypt } = require('../utils/crypto');
 const { signUser, validateToken } = require('../utils/jwt');
-const auth = require('../utils/auth.json');
+const auth = require('../data/auth.json');
 
 exports.login = async (req: any, res: any) => {
     const { username, password, client } = req.body;

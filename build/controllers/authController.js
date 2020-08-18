@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const { decrypt } = require('../utils/crypto');
 const { signUser, validateToken } = require('../utils/jwt');
-const auth = require('../utils/auth.json');
+const auth = require('../data/auth.json');
 exports.login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { username, password, client } = req.body;
     if (!username || !password || !client) {
