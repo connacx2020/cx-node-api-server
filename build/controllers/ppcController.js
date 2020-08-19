@@ -3,10 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dbClient_1 = require("../utils/dbClient");
 exports.getPPCByDateTimeRange = (req, res) => {
     const { door, date1, date2, time1, time2 } = req.query;
-    const dateTime1 = `${date1} ${time1}`;
-    const dateTime2 = `${date2} ${time2}`;
+    console.log(door);
     var doorType = '';
-    switch (door.toLowerCase()) {
+    switch (door) {
         case 'all':
             doorType = " != '0'";
             break;
@@ -22,39 +21,38 @@ exports.getPPCByDateTimeRange = (req, res) => {
         case 'b2':
             doorType = " = 'B2'";
             break;
-        default:
-            doorType = " != '0'";
-            break;
     }
+    console.log(doorType);
+    const dateTime1 = `${date1} ${time1}`;
+    const dateTime2 = `${date2} ${time2}`;
     dbClient_1.default.query(`
-        SELECT 
-            SUM(_data) AS "SUM(_data)"
+        SELECT
+        CASE 
+        WHEN door = 'visitor_count_door1' THEN 'East'
+        WHEN door = 'visitor_count_door2' THEN 'West'
+        WHEN door = 'visitor_count_door3' THEN 'Circle'
+        WHEN door='visitor_count_door4' THEN 'B2'
+        END AS "DOOR",
+        SUM(total_num) AS "SUM(total_num)"
         FROM
-        (select entity_id,
-            key as door,
-            long_v as _data,
-            TO_TIMESTAMP(TRUNC(CAST(ts AS bigint) / 1000))::date as datetime,
-            TO_TIMESTAMP(TRUNC(CAST(ts AS bigint) / 1000))::time as _time
-            from ts_kv
-            where entity_id in ('1ea296c156d41b083816530eccc01ed',
-                '1ea297011afa0a083816530eccc01ed')
-            and key IN ('visitor_count_door1',
-                'visitor_count_door2',
-                'visitor_count_door3',
-                'visitor_count_door4',
-                'outsideMaxTemp')
-            group by key, entity_id, long_v, ts
-            order by datetime desc) AS expr_qry
+        (select key as door,
+            TO_TIMESTAMP(TRUNC(ts/1000))::date as datetime,
+            long_v as total_num
+        from ts_kv
+        where key IN ('visitor_count_door1',
+        'visitor_count_door2'
+        'visitor_count_door3'
+        'visitor_count_door4')) AS expr_qry
         WHERE datetime >= $1
         AND datetime <= $2
-        AND CASE
-          WHEN door = 'visitor_count_door1' THEN 'East'
-          WHEN door = 'visitor_count_door2' THEN 'West'
-          WHEN door = 'visitor_count_door3' THEN 'Circle'
-          WHEN door='visitor_count_door4' THEN 'B2'
+        AND CASE 
+        WHEN door = 'visitor_count_door1' THEN 'East'
+        WHEN door = 'visitor_count_door2' THEN 'West'
+        WHEN door = 'visitor_count_door3' THEN 'Circle'
+        WHEN door='visitor_count_door4' THEN 'B2'
         END ${doorType}
-        ORDER BY "SUM(_data)" DESC
-        LIMIT 50000;
+        GROUP BY door
+        LIMIT 10000;
         `, [dateTime1, dateTime2], (error, results) => {
         if (error) {
             throw error;

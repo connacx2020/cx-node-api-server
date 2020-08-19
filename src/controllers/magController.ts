@@ -9,9 +9,6 @@ exports.getMAGByDateTimeRange = (req: any, res: any) => {
         case 'gender': is_type = 'is_sex_%'; break;
         default: is_type = 'is_feeling_%'; break;
     }
-    const dateTime1 = `${date1} ${time1}`;
-    const dateTime2 = `${date2} ${time2}`;
-
     var doorType = '';
     switch (door) {
         case 'all': doorType = " != '0'"; break
@@ -21,6 +18,8 @@ exports.getMAGByDateTimeRange = (req: any, res: any) => {
         case 'b2': doorType = " = 'B2'"; break;
         default: doorType = " != '0'"; break
     }
+    const dateTime1 = `${date1} ${time1}`
+    const dateTime2 = `${date2} ${time2}`
     const query = `
         SELECT
         CASE
@@ -50,7 +49,7 @@ exports.getMAGByDateTimeRange = (req: any, res: any) => {
         FROM
         (SELECT entity_id,
         key,
-        TO_TIMESTAMP(TRUNC(CAST(ts AS bigint)/1000))as datetime,
+        TO_TIMESTAMP(TRUNC(ts / 1000)) AS datetime,,
         long_v
         FROM public.ts_kv
         where entity_id in ('1ea2b7fc3fa406083816530eccc01ed',
@@ -85,13 +84,11 @@ exports.getMAGByDateTimeRange = (req: any, res: any) => {
             WHEN key = 'is_feeling_angry' THEN 'Angry'
             WHEN key = 'is_sex_male' THEN 'Male'
             WHEN key = 'is_sex_female' THEN 'Female'
-            
             WHEN key = 'is_age_teenager' THEN 'Children'
             WHEN key = 'is_age_young' THEN 'Young'
             WHEN key = 'is_age_middle' THEN 'Middle'
             WHEN key = 'is_age_senior' THEN 'Senior'
         END
-        , DATE_TRUNC('day', datetime) AT TIME ZONE 'UTC'
         ORDER BY "COUNT(Key)" DESC
         LIMIT 10000;
         `

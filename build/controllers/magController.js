@@ -4,7 +4,7 @@ const dbClient_1 = require("../utils/dbClient");
 exports.getMAGByDateTimeRange = (req, res) => {
     const { type, door, date1, date2, time1, time2 } = req.query;
     var is_type = '';
-    switch (type.toLowerCase()) {
+    switch (type) {
         case 'mood':
             is_type = 'is_feeling_%';
             break;
@@ -18,10 +18,8 @@ exports.getMAGByDateTimeRange = (req, res) => {
             is_type = 'is_feeling_%';
             break;
     }
-    const dateTime1 = `${date1} ${time1}`;
-    const dateTime2 = `${date2} ${time2}`;
     var doorType = '';
-    switch (door.toLowerCase()) {
+    switch (door) {
         case 'all':
             doorType = " != '0'";
             break;
@@ -41,6 +39,8 @@ exports.getMAGByDateTimeRange = (req, res) => {
             doorType = " != '0'";
             break;
     }
+    const dateTime1 = `${date1} ${time1}`;
+    const dateTime2 = `${date2} ${time2}`;
     const query = `
         SELECT
         CASE
@@ -70,14 +70,14 @@ exports.getMAGByDateTimeRange = (req, res) => {
         FROM
         (SELECT entity_id,
         key,
-        TO_TIMESTAMP(TRUNC(CAST(ts AS bigint)/1000))as datetime,
+        TO_TIMESTAMP(TRUNC(ts / 1000))::date + INTERVAL '8 hour'as date,
         long_v
         FROM public.ts_kv
         where entity_id in ('1ea2b7fc3fa406083816530eccc01ed',
-                       '1ea2b7fbabb75f083816530eccc01ed',
-                       '1ea2a3e774ee6e083816530eccc01ed',
-                       '1ea2a319d9a986083816530eccc01ed')
-            and key like $1) AS expr_qry
+                    '1ea2b7fbabb75f083816530eccc01ed',
+                    '1ea2a3e774ee6e083816530eccc01ed',
+                    '1ea2a319d9a986083816530eccc01ed')
+        and key like $1) AS expr_qry
         WHERE datetime >= $2
         AND datetime <= $3
         AND CASE
@@ -105,12 +105,11 @@ exports.getMAGByDateTimeRange = (req, res) => {
             WHEN key = 'is_feeling_angry' THEN 'Angry'
             WHEN key = 'is_sex_male' THEN 'Male'
             WHEN key = 'is_sex_female' THEN 'Female'
-            
             WHEN key = 'is_age_teenager' THEN 'Children'
             WHEN key = 'is_age_young' THEN 'Young'
             WHEN key = 'is_age_middle' THEN 'Middle'
             WHEN key = 'is_age_senior' THEN 'Senior'
-        END
+        END,
         ORDER BY "COUNT(Key)" DESC
         LIMIT 10000;
         `;
