@@ -4,8 +4,12 @@ const { authenticateJWT } = require('../utils/jwt');
 
 var router = express.Router();
 
-router.route('/getMAGByDateTimeRange')
+router.route('/getMAGByDateRange')
     // .get(authenticateJWT)
-    .get(controller.getMAGByDateTimeRange);
+    .get(controller.getMAGByDateRange);
+
+router.route('/getMAGByTimeRange')
+    // .get(authenticateJWT)
+    .get(controller.getMAGByTimeRange);
 
 module.exports = router;
