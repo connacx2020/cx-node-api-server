@@ -70,7 +70,7 @@ exports.getMAGByDateRange = (req, res) => {
         FROM
         (SELECT entity_id,
         key,
-        TO_TIMESTAMP(TRUNC(CAST(ts AS bigint) / 1000)) + INTERVAL '8 hour' AS datetime,
+        TO_TIMESTAMP(TRUNC(CAST(ts AS bigint) / 1000)) AS datetime,
         long_v
         FROM public.ts_kv
         where entity_id in ('1ea2b7fc3fa406083816530eccc01ed',
