@@ -19,7 +19,7 @@ exports.getMAGByDateRange = (req: any, res: any) => {
         default: doorType = " != '0'"; break
     }
     const dateTime1 = `${date1} 00:00:00`
-    const dateTime2 = `${date2} 00:00:00`
+    const dateTime2 = `${date2} 23:59:59`
     const query = `
         SELECT
         CASE
@@ -49,7 +49,7 @@ exports.getMAGByDateRange = (req: any, res: any) => {
         FROM
         (SELECT entity_id,
         key,
-        TO_TIMESTAMP(TRUNC(ts/1000)) AS datetime,
+        TO_TIMESTAMP(TRUNC(CAST(ts AS bigint) / 1000)) + INTERVAL '8 hour' as datetime,
         long_v
         FROM public.ts_kv
         where entity_id in ('1ea2b7fc3fa406083816530eccc01ed',

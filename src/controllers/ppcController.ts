@@ -12,7 +12,7 @@ exports.getPPCByDateRange = (req: any, res: any) => {
         default : doorType = " != '0'"; break;
     }
     const dateTime1 = `${date1} 00:00:00`
-    const dateTime2 = `${date2} 00:00:00`
+    const dateTime2 = `${date2} 23:59:59`
     pool.query(
         `
         SELECT CASE
@@ -26,7 +26,7 @@ exports.getPPCByDateRange = (req: any, res: any) => {
         (select entity_id,
             key as door,
             long_v as _data,
-            TO_TIMESTAMP(TRUNC(ts/1000)) as datetime
+            TO_TIMESTAMP(TRUNC(CAST(ts AS bigint) / 1000)) + INTERVAL '8 hour' as datetime
         from public.ts_kv
         where entity_id in ('1ea296c156d41b083816530eccc01ed',
         '1ea297011afa0a083816530eccc01ed')
