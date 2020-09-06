@@ -3,11 +3,25 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dbClient_1 = require("../utils/dbClient");
 exports.getPatronasData = (req, res) => {
     const deviceID = "f62241e0-edc2-11ea-a72f-7398ea06dc89";
-    dbClient_1.default.query(`select * from ts_kv where entity_id=$1 order by key;`, [deviceID], (error, results) => {
+    const { date } = req.query;
+    const datetime1 = `${date} 07:00:00`;
+    const datetime2 = `${date} 22:00:00`;
+    dbClient_1.default.query(`
+        SELECT *
+        FROM 
+        (select entity_id, key, long_v, json_v, ts,
+        TO_TIMESTAMP(TRUNC(ts/1000)) + INTERVAL '8 hour' as datetime
+        from ts_kv 
+        where entity_id=$1) AS expr_qry
+        WHERE datetime >= $2
+        AND datetime <= $3
+        ORDER BY ts;
+        `, [deviceID, datetime1, datetime2], (error, results) => {
         if (error) {
             throw error;
         }
         const data = results.rows;
+        console.log(data);
         const returnData = [];
         data.forEach((res) => {
             switch (res.key) {
