@@ -4,7 +4,7 @@ exports.authenticateJWT = exports.validateToken = void 0;
 const jwt = require('jsonwebtoken');
 const jwtKey = "my_secret_key_aatozz";
 exports.signUser = (userID) => {
-    const jwtExpirySeconds = 36000000;
+    const jwtExpirySeconds = 3600;
     const jwtExpiryTime = new Date(new Date().getTime() + jwtExpirySeconds * 1000).getTime();
     const token = jwt.sign({ userID, jwtExpiryTime }, jwtKey, {
         algorithm: "HS256",

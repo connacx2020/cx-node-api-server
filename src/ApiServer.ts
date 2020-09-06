@@ -7,6 +7,7 @@ const userRoutes = require('./routes/userRoutes');
 const magRoutes = require('./routes/magRoutes');
 const ppcRoutes = require('./routes/ppcRoutes');
 const authRoutes = require('./routes/authRoutes');
+const patronasRoutes = require('./routes/patronasRoutes');
 
 // pool.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";');
 // pool.query(`
@@ -30,6 +31,7 @@ app.use('/user', userRoutes);
 app.use('/auth', authRoutes);
 app.use('/mag', magRoutes);
 app.use('/ppc', ppcRoutes);
+app.use('/patronas', patronasRoutes)
 
 var port = process.env.PORT || 3000;
 app.listen(port, () => {
