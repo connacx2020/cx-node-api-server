@@ -1,6 +1,6 @@
 import pool from '../utils/dbClient';
 
-exports.getPatronasData = (req: any, res: any) => {
+exports.getPatronasDataByDate = (req: any, res: any) => {
     const deviceID = "f62241e0-edc2-11ea-a72f-7398ea06dc89";
     const { date } = req.query;
 
@@ -100,12 +100,12 @@ exports.getPatronasData = (req: any, res: any) => {
                 var dwellTime = pmpData['json_v'].time;
                 var dwellTimeSplited = dwellTime.split(' ');
                 if (dwellTimeSplited.length > 2) {
-                    if(dwellTimeSplited[1] == 'mins' && dwellTimeSplited[3] == 'secs') {
-                        dwellTime = Number(dwellTimeSplited[0])*60 + Number(dwellTimeSplited[2]);
+                    if (dwellTimeSplited[1] == 'mins' && dwellTimeSplited[3] == 'secs') {
+                        dwellTime = Number(dwellTimeSplited[0]) * 60 + Number(dwellTimeSplited[2]);
                     }
                 } else {
-                    if(dwellTimeSplited[1] == 'mins') {
-                        dwellTime = Number(dwellTimeSplited[0])*60;
+                    if (dwellTimeSplited[1] == 'mins') {
+                        dwellTime = Number(dwellTimeSplited[0]) * 60;
                     } else {
                         dwellTime = Number(dwellTimeSplited[0]);
                     }

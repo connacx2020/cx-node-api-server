@@ -1,6 +1,6 @@
-import express = require('express');
-import bodyParser = require('body-parser');
-import dotenv = require('dotenv');
+const express = require('express');
+const bodyParser = require('body-parser');
+const dotenv = require('dotenv');
 
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');

@@ -8,7 +8,7 @@
     "start-dev": "nodemon --config \"./nodemon.json\"/",
     "build": "rm -rf ./build/ && tsc && mkdir ./build/data && cp -r ./src/data/auth.json ./build/data/",
     "start": "node build/ApiServer.js",
-    "start:prod" : "npm run build && node build/ApiServer.js"
+    "start:prod": "npm run build && node build/ApiServer.js"
   },
   "repository": {
     "type": "git",
