@@ -1,4 +1,6 @@
 import pool from '../utils/dbClient';
+const fs = require('fs');
+const csv = require('csv-parser');
 
 exports.getPatronasDataByDate = (req: any, res: any) => {
     const deviceID = "f62241e0-edc2-11ea-a72f-7398ea06dc89";
@@ -153,4 +155,24 @@ exports.getPatronasDataByDate = (req: any, res: any) => {
             pumpData: pump
         }).end();
     });
+}
+
+exports.getPatronasDataFromCsv = (req: any, res: any) => {
+    var csvData :any[]= [];
+    console.log("CSV:", csvData);
+    fs.createReadStream(__dirname + '/../data/pumpCsv.csv')
+        .pipe(csv())
+        .on('data', (row: any) => {
+            csvData.push(row);
+        })
+        .on('end', () => {
+            console.log('CSV file successfully processed');
+
+            res.status(200).json({
+                status: 200,
+                message: 'Successful!',
+                pumpData: csvData
+            }).end();
+
+        });
 }

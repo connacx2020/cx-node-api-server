@@ -6,7 +6,7 @@
   "scripts": {
     "test": "none",
     "start-dev": "nodemon --config \"./nodemon.json\"/",
-    "build": "rm -rf ./build/ && tsc && mkdir ./build/data && cp -r ./src/data/auth.json ./build/data/",
+    "build": "rm -rf ./build/ && tsc && mkdir ./build/data && cp -r ./src/data/auth.json ./build/data/ && cp -r ./src/data/pumpCsv.csv ./build/data/",
     "start": "node build/ApiServer.js",
     "start:prod": "npm run build && node build/ApiServer.js"
   },
@@ -32,8 +32,10 @@
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
+    "csv-parser": "^2.3.3",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "fs": "^0.0.1-security",
     "jsonwebtoken": "^8.5.1",
     "pg": "^8.3.0"
   }

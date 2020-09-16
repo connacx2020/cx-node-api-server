@@ -6,6 +6,6 @@ var router = express.Router();
 
 router.route('/getPatronasData')
     // .get(authenticateJWT)
-    .get(controller.getPatronasDataByDate);
+    .get(controller.getPatronasDataFromCsv);
 
 module.exports = router;
