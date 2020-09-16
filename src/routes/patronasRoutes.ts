@@ -4,7 +4,11 @@ const { authenticateJWT } = require('../utils/jwt');
 
 var router = express.Router();
 
-router.route('/getPatronasData')
+router.route('/getPatronasDataByDate')
+    // .get(authenticateJWT)
+    .get(controller.getPatronasDataByDate);
+
+router.route('/getPatronasDataFromCsv')
     // .get(authenticateJWT)
     .get(controller.getPatronasDataFromCsv);
 

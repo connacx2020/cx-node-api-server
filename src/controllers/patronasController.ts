@@ -116,7 +116,6 @@ exports.getPatronasDataByDate = (req: any, res: any) => {
                 const bin = calculateVehicleCount(vehicleType, count, dwellTime, datetime, time1, time2);
                 switch (pmpData.KEY) {
                     case 'pump1': {
-                        const bin = calculateVehicleCount(vehicleType, count, dwellTime, datetime, time1, time2);
                         pump.pump1.push(bin);
                         break;
                     }
@@ -158,8 +157,48 @@ exports.getPatronasDataByDate = (req: any, res: any) => {
 }
 
 exports.getPatronasDataFromCsv = (req: any, res: any) => {
-    var csvData :any[]= [];
+    const { date } = req.query;
+    var csvData: any[] = [];
     console.log("CSV:", csvData);
+    const calculateVehicleCount = (vehicleType: string, count: number, dewllTime: any, dateTime: any, dateTime1: any, dateTime2: any) => {
+        const bin = {
+            vehicleType1: {
+                count: 0,
+                dwellTime: 0
+            },
+            vehicleType2: {
+                count: 0,
+                dwellTime: 0
+            },
+            vehicleType3: {
+                count: 0,
+                dwellTime: 0
+            }
+        }
+
+        if (dateTime >= dateTime1 && dateTime < dateTime2) {
+            switch (vehicleType) {
+                case 'type1': {
+                    bin.vehicleType1.count += count;
+                    bin.vehicleType1.dwellTime += dewllTime;
+                    break;
+                }
+                case 'type2': {
+                    bin.vehicleType2.count += count;
+                    bin.vehicleType2.dwellTime += dewllTime;
+                    break;
+                }
+                case 'type3': {
+                    bin.vehicleType3.count += count;
+                    bin.vehicleType3.dwellTime += dewllTime;
+                    break;
+                }
+                default: break;
+            }
+        }
+        return bin;
+    }
+
     fs.createReadStream(__dirname + '/../data/pumpCsv.csv')
         .pipe(csv())
         .on('data', (row: any) => {
@@ -168,11 +207,69 @@ exports.getPatronasDataFromCsv = (req: any, res: any) => {
         .on('end', () => {
             console.log('CSV file successfully processed');
 
+            const pump: any = {
+                pump1: [],
+                pump2: [],
+                pump3: [],
+                pump7: [],
+                pump8: [],
+                pump9: []
+            };
+
+            const startTime = 0;
+            const endTime = 24;
+            var binCount = endTime - startTime;
+            for (var i = 0; i < binCount; i++) {
+                const start = startTime + i;
+                const datetime1 = new Date(`${date} ${start}:00:00`);
+                const datetime2 = new Date(datetime1.getTime() + 3600 * 1000);
+                for (var pmpData of csvData) {
+                    const vehicleType = pmpData.vehicleType;
+                    const count = Number(pmpData.count);
+                    const dwellTime = Number(pmpData.dwellTime);
+
+                    const splitDate = csvData[0].date.split('/');
+                    const date = splitDate[2] + '-' + splitDate[1] + '-' + splitDate[0]
+                    const datetime = new Date(date + ' ' + pmpData.time);
+
+                    const bin = calculateVehicleCount(vehicleType, count, dwellTime, datetime, datetime1, datetime2);
+                    console.log("Bin:", bin)
+                    switch (pmpData.pump) {
+                        case '1': {
+                            pump.pump1.push(bin);
+                            break;
+                        }
+                        case '2': {
+                            pump.pump2.push(bin);
+                            break;
+                        }
+                        case '3': {
+                            pump.pump3.push(bin);
+                            break;
+                        }
+                        case '7': {
+                            pump.pump7.push(bin);
+                            break;
+                        }
+                        case '8': {
+                            pump.pump8.push(bin);
+                            break;
+                        }
+                        case '9': {
+                            pump.pump9.push(bin);
+                            break;
+                        }
+                        default: break;
+                    }
+                }
+            }
+
             res.status(200).json({
                 status: 200,
                 message: 'Successful!',
-                pumpData: csvData
+                pumpData: pump
             }).end();
 
         });
 }
+
