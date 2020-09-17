@@ -216,15 +216,14 @@ exports.getPatronasDataFromCsv = (req: any, res: any) => {
                 pump9: []
             };
 
-            const startTime = 16;
-            const endTime = 18;
+            const startTime = 0;
+            const endTime = 24;
             var binCount = endTime - startTime;
 
             for (var i = 0; i < binCount; i++) {
                 const start = startTime + i;
-                const datetime1 = new Date(`${date} ${start}:00:00`);
+                const datetime1 = new Date(`${date} ${start}:00:00`);;
                 const datetime2 = new Date(datetime1.getTime() + 3600 * 1000);
-
                 const binPumpData: any[] = [];
                 csvData.forEach(data => {
                     const splitDate = data.date.split('/');
