@@ -159,8 +159,7 @@ exports.getPatronasDataByDate = (req: any, res: any) => {
 exports.getPatronasDataFromCsv = (req: any, res: any) => {
     const { date } = req.query;
     var csvData: any[] = [];
-    console.log("CSV:", csvData);
-    const calculateVehicleCount = (vehicleType: string, count: number, dewllTime: any, dateTime: any, dateTime1: any, dateTime2: any) => {
+    const calculateVehicleCount = (pumpData: any[]) => {
         const bin = {
             vehicleType1: {
                 count: 0,
@@ -175,27 +174,28 @@ exports.getPatronasDataFromCsv = (req: any, res: any) => {
                 dwellTime: 0
             }
         }
-
-        if (dateTime >= dateTime1 && dateTime < dateTime2) {
-            switch (vehicleType) {
+        pumpData.forEach(data => {
+            const count = Number(data.count);
+            const dwellTime = Number(data.dwellTime);
+            switch (data.vehicleType) {
                 case 'type1': {
                     bin.vehicleType1.count += count;
-                    bin.vehicleType1.dwellTime += dewllTime;
+                    bin.vehicleType1.dwellTime += dwellTime;
                     break;
                 }
                 case 'type2': {
                     bin.vehicleType2.count += count;
-                    bin.vehicleType2.dwellTime += dewllTime;
+                    bin.vehicleType2.dwellTime += dwellTime;
                     break;
                 }
                 case 'type3': {
                     bin.vehicleType3.count += count;
-                    bin.vehicleType3.dwellTime += dewllTime;
+                    bin.vehicleType3.dwellTime += dwellTime;
                     break;
                 }
                 default: break;
             }
-        }
+        });
         return bin;
     }
 
@@ -216,60 +216,103 @@ exports.getPatronasDataFromCsv = (req: any, res: any) => {
                 pump9: []
             };
 
-            const startTime = 0;
-            const endTime = 24;
+            const startTime = 16;
+            const endTime = 18;
             var binCount = endTime - startTime;
+
             for (var i = 0; i < binCount; i++) {
                 const start = startTime + i;
                 const datetime1 = new Date(`${date} ${start}:00:00`);
                 const datetime2 = new Date(datetime1.getTime() + 3600 * 1000);
-                for (var pmpData of csvData) {
-                    const vehicleType = pmpData.vehicleType;
-                    const count = Number(pmpData.count);
-                    const dwellTime = Number(pmpData.dwellTime);
 
-                    const splitDate = csvData[0].date.split('/');
+                const binPumpData: any[] = [];
+                csvData.forEach(data => {
+                    const splitDate = data.date.split('/');
                     const date = splitDate[2] + '-' + splitDate[1] + '-' + splitDate[0]
-                    const datetime = new Date(date + ' ' + pmpData.time);
+                    const datetime = new Date(date + ' ' + data.time);
+                    if (datetime >= datetime1 && datetime < datetime2) {
+                        binPumpData.push(data);
+                    }
+                });
 
-                    const bin = calculateVehicleCount(vehicleType, count, dwellTime, datetime, datetime1, datetime2);
-                    console.log("Bin:", bin)
-                    switch (pmpData.pump) {
-                        case '1': {
-                            pump.pump1.push(bin);
+                var pumps = [1, 2, 3, 7, 8, 9];
+                for (var pumpNumber of pumps) {
+                    switch (pumpNumber) {
+                        case 1: {
+                            const pumpData: any[] = []
+                            binPumpData.forEach(data => {
+                                if (data.pump == 1) {
+                                    pumpData.push(data);
+                                }
+                            });
+                            const pump1Data = calculateVehicleCount(pumpData);
+                            pump.pump1.push(pump1Data);
                             break;
                         }
-                        case '2': {
-                            pump.pump2.push(bin);
+                        case 2: {
+                            const pumpData: any[] = []
+                            binPumpData.forEach(data => {
+                                if (data.pump == 2) {
+                                    pumpData.push(data);
+                                }
+                            });
+                            const result = calculateVehicleCount(pumpData);
+                            pump.pump2.push(result);
                             break;
                         }
-                        case '3': {
-                            pump.pump3.push(bin);
+                        case 3: {
+                            const pumpData: any[] = []
+                            binPumpData.forEach(data => {
+                                if (data.pump == 3) {
+                                    pumpData.push(data);
+                                }
+                            });
+                            const result = calculateVehicleCount(pumpData);
+                            pump.pump3.push(result);
                             break;
                         }
-                        case '7': {
-                            pump.pump7.push(bin);
+                        case 7: {
+                            const pumpData: any[] = []
+                            binPumpData.forEach(data => {
+                                if (data.pump == 7) {
+                                    pumpData.push(data);
+                                }
+                            });
+                            const result = calculateVehicleCount(pumpData);
+                            pump.pump7.push(result);
                             break;
                         }
-                        case '8': {
-                            pump.pump8.push(bin);
+                        case 8: {
+                            const pumpData: any[] = []
+                            binPumpData.forEach(data => {
+                                if (data.pump == 8) {
+                                    pumpData.push(data);
+                                }
+                            });
+                            const result = calculateVehicleCount(pumpData);
+                            pump.pump8.push(result);
                             break;
                         }
-                        case '9': {
-                            pump.pump9.push(bin);
+                        case 9: {
+                            const pumpData: any[] = []
+                            binPumpData.forEach(data => {
+                                if (data.pump == 9) {
+                                    pumpData.push(data);
+                                }
+                            });
+                            const result = calculateVehicleCount(pumpData);
+                            pump.pump9.push(result);
                             break;
                         }
                         default: break;
                     }
                 }
-            }
+            };
 
             res.status(200).json({
                 status: 200,
                 message: 'Successful!',
                 pumpData: pump
             }).end();
-
         });
-}
-
+};
