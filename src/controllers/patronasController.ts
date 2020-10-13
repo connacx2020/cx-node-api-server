@@ -175,21 +175,20 @@ exports.getPatronasDataFromCsv = (req: any, res: any) => {
             }
         }
         pumpData.forEach(data => {
-            const count = Number(data.count);
-            const dwellTime = Number(data.dwellTime);
+            const dwellTime = data.dwellTime;
             switch (data.vehicleType) {
                 case 'type1': {
-                    bin.vehicleType1.count += count;
+                    ++bin.vehicleType1.count;
                     bin.vehicleType1.dwellTime += dwellTime;
                     break;
                 }
                 case 'type2': {
-                    bin.vehicleType2.count += count;
+                    ++bin.vehicleType2.count;
                     bin.vehicleType2.dwellTime += dwellTime;
                     break;
                 }
                 case 'type3': {
-                    bin.vehicleType3.count += count;
+                    ++bin.vehicleType3.count;
                     bin.vehicleType3.dwellTime += dwellTime;
                     break;
                 }
@@ -224,18 +223,32 @@ exports.getPatronasDataFromCsv = (req: any, res: any) => {
                 const start = startTime + i;
                 const datetime1 = new Date(`${date} ${start}:00:00`);;
                 const datetime2 = new Date(datetime1.getTime() + 3600 * 1000);
+
                 const binPumpData: any[] = [];
+
                 csvData.forEach(data => {
-                    const splitDate = data.date.split('/');
-                    const date = splitDate[2] + '-' + splitDate[1] + '-' + splitDate[0]
-                    const datetime = new Date(date + ' ' + data.time);
+                    const splitedStartTime = data.startTime.split(' ');
+                    const splitDate = splitedStartTime[0].split('/');
+                    const date = splitDate[1] + '/' + splitDate[0] + '/' + splitDate[2]
+                    const datetime = new Date(date + ' ' + splitedStartTime[1]);
+
+                    const splitedEndDateTime = data.endTime.split(' ');
+                    const splitedEndDate = splitedEndDateTime[0].split('/');
+                    const endDate = splitedEndDate[1] + '/' + splitedEndDate[0] + '/' + splitedEndDate[2]
+                    const endDatetime = new Date(endDate + ' ' + splitedEndDateTime[1]);
+                    const dwellTime = (Number(endDatetime.getTime()) - Number(datetime.getTime())) / 1000;
+
                     if (datetime >= datetime1 && datetime < datetime2) {
-                        binPumpData.push(data);
+                        binPumpData.push({
+                            pump: data.pump,
+                            vehicleType: data.vehicleType,
+                            dwellTime
+                        });
                     }
                 });
 
                 var pumps = [1, 2, 3, 7, 8, 9];
-                for (var pumpNumber of pumps) {
+                pumps.forEach((pumpNumber: number) => {
                     switch (pumpNumber) {
                         case 1: {
                             const pumpData: any[] = []
@@ -249,7 +262,7 @@ exports.getPatronasDataFromCsv = (req: any, res: any) => {
                             break;
                         }
                         case 2: {
-                            const pumpData: any[] = []
+                            const pumpData: number[] = []
                             binPumpData.forEach(data => {
                                 if (data.pump == 2) {
                                     pumpData.push(data);
@@ -305,8 +318,8 @@ exports.getPatronasDataFromCsv = (req: any, res: any) => {
                         }
                         default: break;
                     }
-                }
-            };
+                });
+            }
 
             res.status(200).json({
                 status: 200,
