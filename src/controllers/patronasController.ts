@@ -46,9 +46,6 @@ const doData = (allData: any[], date: string,) => {
         pump1: [],
         pump2: [],
         pump3: [],
-        pump4: [],
-        pump5: [],
-        pump6: [],
         pump7: [],
         pump8: [],
         pump9: []
@@ -85,7 +82,7 @@ const doData = (allData: any[], date: string,) => {
             }
         });
 
-        var pumps = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        var pumps = [1, 2, 3, 7, 8, 9];
         pumps.forEach((pumpNumber: number) => {
             switch (pumpNumber) {
                 case 1: {
@@ -119,39 +116,6 @@ const doData = (allData: any[], date: string,) => {
                     });
                     const result = calculateVehicleCount(pumpData);
                     pump.pump3.push(result);
-                    break;
-                }
-                case 4: {
-                    const pumpData: any[] = []
-                    binPumpData.forEach(data => {
-                        if (data.pump == 'pump4') {
-                            pumpData.push(data);
-                        }
-                    });
-                    const result = calculateVehicleCount(pumpData);
-                    pump.pump4.push(result);
-                    break;
-                }
-                case 5: {
-                    const pumpData: any[] = []
-                    binPumpData.forEach(data => {
-                        if (data.pump == 'pump5') {
-                            pumpData.push(data);
-                        }
-                    });
-                    const result = calculateVehicleCount(pumpData);
-                    pump.pump5.push(result);
-                    break;
-                }
-                case 6: {
-                    const pumpData: any[] = []
-                    binPumpData.forEach(data => {
-                        if (data.pump == 'pump6') {
-                            pumpData.push(data);
-                        }
-                    });
-                    const result = calculateVehicleCount(pumpData);
-                    pump.pump6.push(result);
                     break;
                 }
                 case 7: {
@@ -207,9 +171,6 @@ exports.getPatronasDataByDate = (req: any, res: any) => {
         WHEN key = '8' THEN 'pump1'
         WHEN key = '9' THEN 'pump2'
         WHEN key = '10' THEN 'pump3'
-        WHEN key='11' THEN 'pump4'
-        WHEN key='12' THEN 'pump5'
-        WHEN key='13' THEN 'pump6'
         WHEN key='15' THEN 'pump7'
         WHEN key='16' THEN 'pump8'
         WHEN key='17' THEN 'pump9'
@@ -219,7 +180,7 @@ exports.getPatronasDataByDate = (req: any, res: any) => {
         TO_TIMESTAMP(TRUNC(ts/1000)) as datetime
         from ts_kv 
         where entity_id=$1 
-        AND key IN ('8', '9', '10', '11', '12', '13', '15', '16', '17')) AS expr_qry
+        AND key IN ('8', '9', '10', '15', '16', '17')) AS expr_qry
         WHERE datetime >= $2
         AND datetime < $3
         ORDER BY ts;
