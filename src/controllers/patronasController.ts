@@ -40,7 +40,7 @@ const calculateVehicleCount = (pumpData: any[]) => {
     });
     return bin;
 }
-const doData = (allData: any[], date: string,) => {
+const doData = (allData: any[], date1: string, date2: string) => {
     const pump: any = {
         pump1: [],
         pump2: [],
@@ -54,39 +54,48 @@ const doData = (allData: any[], date: string,) => {
     const endTime = 24;
     var binCount = endTime - startTime;
 
+    const binPumpData: any[] = [];
+    let countDate = 0;
+
     for (var i = 0; i < binCount; i++) {
         const start = startTime + i;
-        const datetime1 = new Date(`${date} ${start}:00:00`);;
-        const datetime2 = new Date(datetime1.getTime() + 3600 * 1000);
+        let startDate = new Date(date1);
+        const lastDate = new Date(`${date2} 23:59:59`);
+        const tempArray: any[] = [];
+        while (startDate < lastDate) {
+            const datetime1 = new Date(Date.parse(`${startDate.getMonth() + 1}/${startDate.getDate()}/${startDate.getFullYear()} ${start}:00:00`));
+            const datetime2 = new Date((datetime1.getTime() + 3600 * 1000));
 
-        const binPumpData: any[] = [];
+            allData.forEach(data => {
+                const splittedStartDateTime = data.startTime.split(' ', 2);
+                const splittedStartDate = splittedStartDateTime[0].split('/', 3);
+                const startDateTime = new Date(Date.parse(`${splittedStartDate[1]}/${splittedStartDate[0]}/${splittedStartDate[2]} ${splittedStartDateTime[1]}`));
 
-        allData.forEach(data => {
-            const splittedStartDateTime = data.startTime.split(' ');
-            const splittedStartDate = splittedStartDateTime[0].split('/');
-            const startDateTime = new Date(`${splittedStartDate[1]}/${splittedStartDate[0]}/${splittedStartDate[2]} ${splittedStartDateTime[1]}`);
+                const splittedEndDateTime = data.endTime.split(' ');
+                const splittedEndDate = splittedEndDateTime[0].split('/');
+                const endDateTime = new Date(Date.parse(`${splittedEndDate[1]}/${splittedEndDate[0]}/${splittedEndDate[2]} ${splittedEndDateTime[1]}`));
+                const dwellTime = (Number(endDateTime.getTime()) - Number(startDateTime.getTime())) / 1000;
+                if (startDateTime >= datetime1 && startDateTime < datetime2) {
+                    tempArray.push({
+                        pump: data.pump,
+                        vehicleType: data.vehicleType,
+                        dwellTime
+                    });
+                    countDate++;
+                }
+            });
+            startDate = new Date(startDate.getTime() + 3600 * 24 * 1000);
+        }
+        binPumpData.push(tempArray);
+    }
 
-            const splittedEndDateTime = data.endTime.split(' ');
-            const splittedEndDate = splittedEndDateTime[0].split('/');
-            const endDateTime = new Date(`${splittedEndDate[1]}/${splittedEndDate[0]}/${splittedEndDate[2]} ${splittedEndDateTime[1]}`);
-
-            const dwellTime = (Number(endDateTime.getTime()) - Number(startDateTime.getTime())) / 1000;
-
-            if (startDateTime >= datetime1 && startDateTime < datetime2 || endDateTime >= datetime1 && endDateTime < datetime2) {
-                binPumpData.push({
-                    pump: data.pump,
-                    vehicleType: data.vehicleType,
-                    dwellTime
-                });
-            }
-        });
-
-        var pumps = [1, 2, 3, 7, 8, 9];
-        pumps.forEach((pumpNumber: number) => {
+    const pumpCounts = [1, 2, 3, 7, 8, 9];
+    binPumpData.forEach(binData => {
+        pumpCounts.forEach((pumpNumber: number) => {
             switch (pumpNumber) {
                 case 1: {
                     const pumpData: any[] = []
-                    binPumpData.forEach(data => {
+                    binData.forEach((data: any) => {
                         if (data.pump == 'pump1') {
                             pumpData.push(data);
                         }
@@ -97,7 +106,7 @@ const doData = (allData: any[], date: string,) => {
                 }
                 case 2: {
                     const pumpData: number[] = []
-                    binPumpData.forEach(data => {
+                    binData.forEach((data:any) => {
                         if (data.pump == 'pump2') {
                             pumpData.push(data);
                         }
@@ -108,7 +117,7 @@ const doData = (allData: any[], date: string,) => {
                 }
                 case 3: {
                     const pumpData: any[] = []
-                    binPumpData.forEach(data => {
+                    binData.forEach((data: any) => {
                         if (data.pump == 'pump3') {
                             pumpData.push(data);
                         }
@@ -119,7 +128,7 @@ const doData = (allData: any[], date: string,) => {
                 }
                 case 7: {
                     const pumpData: any[] = []
-                    binPumpData.forEach(data => {
+                    binData.forEach((data:any) => {
                         if (data.pump == 'pump7') {
                             pumpData.push(data);
                         }
@@ -130,7 +139,7 @@ const doData = (allData: any[], date: string,) => {
                 }
                 case 8: {
                     const pumpData: any[] = []
-                    binPumpData.forEach(data => {
+                    binData.forEach((data: any) => {
                         if (data.pump == 'pump8') {
                             pumpData.push(data);
                         }
@@ -141,7 +150,7 @@ const doData = (allData: any[], date: string,) => {
                 }
                 case 9: {
                     const pumpData: any[] = []
-                    binPumpData.forEach(data => {
+                    binData.forEach((data: any) => {
                         if (data.pump == 'pump9') {
                             pumpData.push(data);
                         }
@@ -153,16 +162,20 @@ const doData = (allData: any[], date: string,) => {
                 default: break;
             }
         });
-    }
+    });
     return pump;
 }
 
 exports.getPatronasDataByDate = (req: any, res: any) => {
     const deviceID = 'f62241e0-edc2-11ea-a72f-7398ea06dc89';
-    const { date } = req.query;
-    const splittedDate = date.split('/');
-    const dateTime1 = new Date(Date.parse(`${splittedDate[1]}/${splittedDate[0]}/${splittedDate[2]}`));
-    const dateTime2 = new Date(dateTime1.getTime() + 3600 * 24 * 1000);
+    const { date1, date2 } = req.query;
+    const splittedDate1 = date1.split('/');
+    const formattedDate1 = `${splittedDate1[1]}/${splittedDate1[0]}/${splittedDate1[2]}`;
+    const dateTime1 = new Date(Date.parse(formattedDate1));
+
+    const splittedDate2 = date2.split('/');
+    const formattedDate2 = `${splittedDate2[1]}/${splittedDate2[0]}/${splittedDate2[2]}`;
+    const dateTime2 = new Date(Date.parse(formattedDate2));
     try {
         pool.query(
             `
@@ -181,7 +194,7 @@ exports.getPatronasDataByDate = (req: any, res: any) => {
             where entity_id=$1 
             AND key IN ('8', '9', '10', '15', '16', '17')) AS expr_qry
             WHERE datetime >= $2
-            AND datetime < $3
+            AND datetime <= $3
             ORDER BY ts;
             `, [deviceID, dateTime1, dateTime2], (error: any, results: any) => {
             if (error) {
@@ -205,7 +218,7 @@ exports.getPatronasDataByDate = (req: any, res: any) => {
                         dateTimeSting
                     }
                 });
-                const result = doData(data, date);
+                const result = doData(data, formattedDate1, formattedDate2);
                 res.status(200).json({
                     status: 200,
                     message: 'Successful!',
@@ -219,9 +232,14 @@ exports.getPatronasDataByDate = (req: any, res: any) => {
 }
 
 exports.getPatronasDataFromCsv = (req: any, res: any) => {
-    const { date } = req.query;
+    const { date1, date2 } = req.query;
     var csvData: any[] = [];
 
+    const splittedDate1 = date1.split('/');
+    const formattedDate1 = `${splittedDate1[1]}/${splittedDate1[0]}/${splittedDate1[2]}`;
+
+    const splittedDate2 = date2.split('/');
+    const formattedDate2 = `${splittedDate2[1]}/${splittedDate2[0]}/${splittedDate2[2]}`;
 
     fs.createReadStream(__dirname + '/../data/pumpCsv.csv')
         .pipe(csv())
@@ -230,7 +248,7 @@ exports.getPatronasDataFromCsv = (req: any, res: any) => {
         })
         .on('end', () => {
             console.log('CSV file successfully processed');
-            const result = doData(csvData, date);
+            const result = doData(csvData, formattedDate1, formattedDate2);
             res.status(200).json({
                 status: 200,
                 message: 'Successful!',
