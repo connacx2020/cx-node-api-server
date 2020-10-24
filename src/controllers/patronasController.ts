@@ -67,13 +67,15 @@ const doData = (allData: any[], date1: string, date2: string) => {
             const datetime2 = new Date((datetime1.getTime() + 3600 * 1000));
 
             allData.forEach(data => {
-                const splittedStartDateTime = data.startTime.split(' ', 2);
-                const splittedStartDate = splittedStartDateTime[0].split('/', 3);
-                const startDateTime = new Date(Date.parse(`${splittedStartDate[1]}/${splittedStartDate[0]}/${splittedStartDate[2]} ${splittedStartDateTime[1]}`));
+                const splittedStartDateTime = data.startTime.split(' ');
+                const splittedStartDate = splittedStartDateTime[0].split('/');
+                const startTime = splittedStartDateTime[splittedStartDateTime.length-1].trim();
+                const startDateTime = new Date(`${splittedStartDate[1]}/${splittedStartDate[0]}/${splittedStartDate[2]} ${startTime}`);
 
                 const splittedEndDateTime = data.endTime.split(' ');
                 const splittedEndDate = splittedEndDateTime[0].split('/');
-                const endDateTime = new Date(Date.parse(`${splittedEndDate[1]}/${splittedEndDate[0]}/${splittedEndDate[2]} ${splittedEndDateTime[1]}`));
+                const endTime = splittedEndDateTime[splittedEndDateTime.length-1].trim();
+                const endDateTime = new Date(`${splittedEndDate[1]}/${splittedEndDate[0]}/${splittedEndDate[2]} ${endTime}`);
                 const dwellTime = (Number(endDateTime.getTime()) - Number(startDateTime.getTime())) / 1000;
                 if (startDateTime >= datetime1 && startDateTime < datetime2) {
                     tempArray.push({
@@ -88,7 +90,6 @@ const doData = (allData: any[], date1: string, date2: string) => {
         }
         binPumpData.push(tempArray);
     }
-
     const pumpCounts = [1, 2, 3, 7, 8, 9];
     binPumpData.forEach(binData => {
         pumpCounts.forEach((pumpNumber: number) => {
@@ -193,10 +194,8 @@ exports.getPatronasDataByDate = (req: any, res: any) => {
             from ts_kv 
             where entity_id=$1 
             AND key IN ('8', '9', '10', '15', '16', '17')) AS expr_qry
-            WHERE datetime >= $2
-            AND datetime <= $3
             ORDER BY ts;
-            `, [deviceID, dateTime1, dateTime2], (error: any, results: any) => {
+            `, [deviceID], (error: any, results: any) => {
             if (error) {
                 console.log(error)
                 res.status(400).json({
