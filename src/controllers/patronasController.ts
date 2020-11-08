@@ -260,7 +260,7 @@ exports.getPatronasDataFromCsv = (req: any, res: any) => {
 exports.getVehicleCountByDwellTimeRange = async (req: any, res: any) => {
     let { date1, date2 } = req.query;
     date1 = new Date(moment(date1, 'DD/MM/YYYY').format('MM/DD/YYYY'));
-    date2 = new Date(moment(`${date2} 23:59:59`, 'DD/MM/YYYY hh:mm:ss').format('MM/DD/YYYY hh:mm:ss'));
+    date2 = new Date(moment(`${date2}`, 'DD/MM/YYYY').add(24, 'hours').format('MM/DD/YYYY'));
     const deviceID = 'f62241e0-edc2-11ea-a72f-7398ea06dc89';
     try {
         pool.query(
@@ -305,6 +305,104 @@ exports.getVehicleCountByDwellTimeRange = async (req: any, res: any) => {
     }
 }
 
+exports.getAnomalyData = (req: any, res: any) => {
+    let { date1, date2 } = req.query;
+    date1 = new Date(moment(date1, 'DD/MM/YYYY').format('MM/DD/YYYY'));
+    date2 = new Date(moment(`${date2}`, 'DD/MM/YYYY').add(24, 'hours').format('MM/DD/YYYY'));
+    queryDataFromThingsBoard('anomaly', date1, date2, res);
+}
+
+const queryDataFromThingsBoard = (type: string, date1: Date, date2: Date, res: any) => {
+    const deviceID = 'f62241e0-edc2-11ea-a72f-7398ea06dc89';
+    try {
+        pool.query(
+            `
+            SELECT CASE
+            WHEN key = '8' THEN 'pump1'
+            WHEN key = '9' THEN 'pump2'
+            WHEN key = '10' THEN 'pump3'
+            WHEN key='15' THEN 'pump7'
+            WHEN key='16' THEN 'pump8'
+            WHEN key='17' THEN 'pump9'
+            END AS "KEY", json_v, ts, long_v, datetime
+            FROM 
+            (select entity_id, key, long_v, json_v, ts,
+            TO_TIMESTAMP(TRUNC(ts/1000)) as datetime
+            from ts_kv 
+            where entity_id=$1 
+            AND key IN ('8', '9', '10', '15', '16', '17')) AS expr_qry
+            ORDER BY ts;
+            `, [deviceID], (error: any, results: any) => {
+            if (error) {
+                console.log(error);
+                res.status(400).json({
+                    status: 400,
+                    message: 'Failed!',
+                    pumpData: []
+                }).end();
+            } else {
+                const data = results.rows;
+                let result: any;
+                switch (type) {
+                    case 'anomaly': {
+                        result = calculateAnomaly(data, date1, date2);
+                    }
+                }
+                res.status(200).json({
+                    status: 200,
+                    message: 'Successful!',
+                    result
+                }).end();
+            }
+        });
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+
+const calculateAnomaly = (allData: any, date1: Date, date2: Date) => {
+    const filteredData = filterDataByDate(allData, date1, date2);
+    const bin = {
+        pump1: 0,
+        pump2: 0,
+        pump3: 0,
+        pump7: 0,
+        pump8: 0,
+        pump9: 0,
+    }
+    const binCount = Math.ceil(((date2.getTime() - date1.getTime()) / 1000) / 60);
+    for (let i = 0; i < binCount / 30; i++) {
+        const binDate1 = new Date(date1.getTime() + (i * 30 * 60 * 1000));
+        const binDate2 = new Date(date1.getTime() + ((i + 1) * 30 * 60 * 1000));
+        const dataIn30Min = filteredData.filter((data: any) => data.startTime >= binDate1 && data.startTime < binDate2);
+        if (dataIn30Min.length > 2) {
+            const pumps = ['pump1', 'pump2', 'pump3', 'pump7', 'pump8', 'pump9'];
+            pumps.forEach(pump => {
+                let binCount = 0;
+                const pumpData = dataIn30Min.filter((data: any) => data.pump === pump);
+                pumpData.forEach((data: any) => {
+                    if (data.dwellTime < 120) {
+                        ++binCount;
+                    }
+                });
+                if (binCount > 2) {
+                    switch (pump) {
+                        case 'pump1': ++bin.pump1; break;
+                        case 'pump2': ++bin.pump2; break;
+                        case 'pump3': ++bin.pump3; break;
+                        case 'pump7': ++bin.pump7; break;
+                        case 'pump8': ++bin.pump8; break;
+                        case 'pump9': ++bin.pump9; break;
+                    }
+                }
+            });
+        }
+    }
+    return bin;
+}
+
 const countVehicleDataWithDwellTime = (data: any, date1: Date, date2: Date) => {
     const results: any = {
         pump1: [],
@@ -333,7 +431,7 @@ const countVehicleDataWithDwellTime = (data: any, date1: Date, date2: Date) => {
     const pumps = ['pump1', 'pump2', 'pump3', 'pump7', 'pump8', 'pump9'];
     const count = 8;
     for (var i = 1; i <= count; i++) {
-        let dataByDwellTime = allPumpData.filter((pumpData: any) => pumpData.dwellTime > (60 * (i-1)) && pumpData.dwellTime <= (60 * i));
+        let dataByDwellTime = allPumpData.filter((pumpData: any) => pumpData.dwellTime > (60 * (i - 1)) && pumpData.dwellTime <= (60 * i));
         if (i === 8) {
             dataByDwellTime = allPumpData.filter((pumpData: any) => pumpData.dwellTime >= (60 * 7));
         }
@@ -377,4 +475,22 @@ const splitDateTime = (date: string) => {
     const splittedDate = moment(splittedDateTime[0], 'DD/MM/YYYY').format('MM/DD/YYYY');
     const splittedTime = splittedDateTime[splittedDateTime.length - 1].trim();
     return new Date(`${splittedDate} ${splittedTime}`);
+}
+
+const filterDataByDate = (data: any, date1: Date, date2: Date) => {
+    const result = data.map((res: any) => {
+        const { KEY, json_v } = res;
+        let { startTime, endTime, vehicleType } = json_v;
+
+        startTime = splitDateTime(startTime.toString())
+        endTime = splitDateTime(endTime.toString());
+        return {
+            pump: KEY,
+            startTime,
+            endTime,
+            dwellTime: (endTime.getTime() - startTime.getTime()) / 1000, // In Seconds
+            vehicleType,
+        };
+    });
+    return result.filter((pumpData: any) => pumpData.startTime >= date1 && pumpData.startTime <= date2)
 }
