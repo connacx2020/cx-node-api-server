@@ -339,16 +339,16 @@ const countVehicleDataWithDwellTime = (data: any, date1: Date, date2: Date) => {
         }
         pumps.forEach(pump => {
             const bin = {
-                vehicleType1: 0,
-                vehicleType2: 0,
-                vehicleType3: 0,
+                vehicleType1Count: 0,
+                vehicleType2Count: 0,
+                vehicleType3Count: 0,
             }
             const binPumpData = dataByDwellTime.filter((pumpData: any) => pumpData.pump === pump);
             binPumpData.forEach((pumpData: any) => {
                 switch (pumpData.vehicleType) {
-                    case 'type1': ++bin.vehicleType1; break;
-                    case 'type2': ++bin.vehicleType2; break;
-                    case 'type3': ++bin.vehicleType3; break;
+                    case 'type1': ++bin.vehicleType1Count; break;
+                    case 'type2': ++bin.vehicleType2Count; break;
+                    case 'type3': ++bin.vehicleType3Count; break;
                 }
             });
             switch (pump) {
