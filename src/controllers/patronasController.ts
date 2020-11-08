@@ -222,7 +222,7 @@ exports.getPatronasDataByDate = (req: any, res: any) => {
                 res.status(200).json({
                     status: 200,
                     message: 'Successful!',
-                    pumpData: result
+                    result
                 }).end();
             }
         });
