@@ -261,48 +261,7 @@ exports.getVehicleCountByDwellTimeRange = async (req: any, res: any) => {
     let { date1, date2 } = req.query;
     date1 = new Date(moment(date1, 'DD/MM/YYYY').format('MM/DD/YYYY'));
     date2 = new Date(moment(`${date2}`, 'DD/MM/YYYY').add(24, 'hours').format('MM/DD/YYYY'));
-    const deviceID = 'f62241e0-edc2-11ea-a72f-7398ea06dc89';
-    try {
-        pool.query(
-            `
-            SELECT CASE
-            WHEN key = '8' THEN 'pump1'
-            WHEN key = '9' THEN 'pump2'
-            WHEN key = '10' THEN 'pump3'
-            WHEN key='15' THEN 'pump7'
-            WHEN key='16' THEN 'pump8'
-            WHEN key='17' THEN 'pump9'
-            END AS "KEY", json_v, ts, long_v, datetime
-            FROM 
-            (select entity_id, key, long_v, json_v, ts,
-            TO_TIMESTAMP(TRUNC(ts/1000)) as datetime
-            from ts_kv 
-            where entity_id=$1 
-            AND key IN ('8', '9', '10', '15', '16', '17')) AS expr_qry
-            ORDER BY ts;
-            `, [deviceID], (error: any, results: any) => {
-            if (error) {
-                console.log(error)
-                res.status(400).json({
-                    status: 400,
-                    message: 'Failed!',
-                    pumpData: []
-                }).end();
-            } else {
-                const data = results.rows;
-
-                const result = countVehicleDataWithDwellTime(data, date1, date2);
-
-                res.status(200).json({
-                    status: 200,
-                    message: 'Successful!',
-                    vehicleDwellTimeData: result
-                }).end();
-            }
-        });
-    } catch (error) {
-        throw error;
-    }
+    queryDataFromThingsBoard('tb', 'vehicleCount', date1, date2, res);
 }
 
 exports.getAnomalyData = (req: any, res: any) => {
@@ -319,7 +278,7 @@ const queryDataFromThingsBoard = (dataSource: string, type: string, date1: Date,
             .pipe(csv())
             .on('data', (row: any) => {
                 csvData.push({
-                    KEY :row.pump,
+                    KEY: row.pump,
                     json_v: row
                 });
             })
@@ -366,6 +325,9 @@ const queryDataFromThingsBoard = (dataSource: string, type: string, date1: Date,
                     switch (type) {
                         case 'anomaly': {
                             result = calculateAnomaly(data, date1, date2); break;
+                        }
+                        case 'vehicleCount': {
+                            result = countVehicleDataWithDwellTime(data, date1, date2); break;
                         }
                     }
                     res.status(200).json({
@@ -503,8 +465,8 @@ const filterDataByDate = (data: any, date1: Date, date2: Date) => {
         const { KEY, json_v } = res;
         let { startTime, endTime, vehicleType }: any = json_v;
 
-        startTime = splitDateTime(startTime+'')
-        endTime = splitDateTime(endTime+'');
+        startTime = splitDateTime(startTime + '')
+        endTime = splitDateTime(endTime + '');
         return {
             pump: KEY,
             startTime,
