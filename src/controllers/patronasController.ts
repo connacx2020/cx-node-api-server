@@ -309,14 +309,34 @@ exports.getAnomalyData = (req: any, res: any) => {
     let { date1, date2 } = req.query;
     date1 = new Date(moment(date1, 'DD/MM/YYYY').format('MM/DD/YYYY'));
     date2 = new Date(moment(`${date2}`, 'DD/MM/YYYY').add(24, 'hours').format('MM/DD/YYYY'));
-    queryDataFromThingsBoard('anomaly', date1, date2, res);
+    queryDataFromThingsBoard('tb', 'anomaly', date1, date2, res);
 }
 
-const queryDataFromThingsBoard = (type: string, date1: Date, date2: Date, res: any) => {
-    const deviceID = 'f62241e0-edc2-11ea-a72f-7398ea06dc89';
-    try {
-        pool.query(
-            `
+const queryDataFromThingsBoard = (dataSource: string, type: string, date1: Date, date2: Date, res: any) => {
+    if (dataSource === 'csv') {
+        var csvData: any[] = [];
+        fs.createReadStream(__dirname + '/../data/pumpCsv.csv')
+            .pipe(csv())
+            .on('data', (row: any) => {
+                csvData.push({
+                    KEY :row.pump,
+                    json_v: row
+                });
+            })
+            .on('end', () => {
+                console.log('CSV file successfully processed');
+                const result = calculateAnomaly(csvData, date1, date2);
+                res.status(200).json({
+                    status: 200,
+                    message: 'Successful!',
+                    pumpData: result
+                }).end();
+            });
+    } else {
+        const deviceID = 'f62241e0-edc2-11ea-a72f-7398ea06dc89';
+        try {
+            pool.query(
+                `
             SELECT CASE
             WHEN key = '8' THEN 'pump1'
             WHEN key = '9' THEN 'pump2'
@@ -333,30 +353,31 @@ const queryDataFromThingsBoard = (type: string, date1: Date, date2: Date, res: a
             AND key IN ('8', '9', '10', '15', '16', '17')) AS expr_qry
             ORDER BY ts;
             `, [deviceID], (error: any, results: any) => {
-            if (error) {
-                console.log(error);
-                res.status(400).json({
-                    status: 400,
-                    message: 'Failed!',
-                    pumpData: []
-                }).end();
-            } else {
-                const data = results.rows;
-                let result: any;
-                switch (type) {
-                    case 'anomaly': {
-                        result = calculateAnomaly(data, date1, date2);
+                if (error) {
+                    console.log(error);
+                    res.status(400).json({
+                        status: 400,
+                        message: 'Failed!',
+                        pumpData: []
+                    }).end();
+                } else {
+                    const data = results.rows;
+                    let result: any;
+                    switch (type) {
+                        case 'anomaly': {
+                            result = calculateAnomaly(data, date1, date2); break;
+                        }
                     }
+                    res.status(200).json({
+                        status: 200,
+                        message: 'Successful!',
+                        result
+                    }).end();
                 }
-                res.status(200).json({
-                    status: 200,
-                    message: 'Successful!',
-                    result
-                }).end();
-            }
-        });
-    } catch (error) {
-        throw error;
+            });
+        } catch (error) {
+            throw error;
+        }
     }
 }
 
@@ -480,10 +501,10 @@ const splitDateTime = (date: string) => {
 const filterDataByDate = (data: any, date1: Date, date2: Date) => {
     const result = data.map((res: any) => {
         const { KEY, json_v } = res;
-        let { startTime, endTime, vehicleType } = json_v;
+        let { startTime, endTime, vehicleType }: any = json_v;
 
-        startTime = splitDateTime(startTime.toString())
-        endTime = splitDateTime(endTime.toString());
+        startTime = splitDateTime(startTime+'')
+        endTime = splitDateTime(endTime+'');
         return {
             pump: KEY,
             startTime,
