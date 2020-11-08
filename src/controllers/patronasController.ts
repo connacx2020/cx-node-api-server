@@ -288,7 +288,7 @@ const queryDataFromThingsBoard = (dataSource: string, type: string, date1: Date,
                 res.status(200).json({
                     status: 200,
                     message: 'Successful!',
-                    pumpData: result
+                    result
                 }).end();
             });
     } else {
@@ -317,7 +317,7 @@ const queryDataFromThingsBoard = (dataSource: string, type: string, date1: Date,
                     res.status(400).json({
                         status: 400,
                         message: 'Failed!',
-                        pumpData: []
+                        result: []
                     }).end();
                 } else {
                     const data = results.rows;
@@ -342,8 +342,6 @@ const queryDataFromThingsBoard = (dataSource: string, type: string, date1: Date,
         }
     }
 }
-
-
 
 const calculateAnomaly = (allData: any, date1: Date, date2: Date) => {
     const filteredData = filterDataByDate(allData, date1, date2);
