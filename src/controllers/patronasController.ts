@@ -1,3 +1,4 @@
+import moment = require('moment');
 import pool from '../utils/dbClient';
 const fs = require('fs');
 const csv = require('csv-parser');
@@ -69,12 +70,12 @@ const doData = (allData: any[], date1: string, date2: string) => {
             allData.forEach(data => {
                 const splittedStartDateTime = data.startTime.split(' ');
                 const splittedStartDate = splittedStartDateTime[0].split('/');
-                const startTime = splittedStartDateTime[splittedStartDateTime.length-1].trim();
+                const startTime = splittedStartDateTime[splittedStartDateTime.length - 1].trim();
                 const startDateTime = new Date(`${splittedStartDate[1]}/${splittedStartDate[0]}/${splittedStartDate[2]} ${startTime}`);
 
                 const splittedEndDateTime = data.endTime.split(' ');
                 const splittedEndDate = splittedEndDateTime[0].split('/');
-                const endTime = splittedEndDateTime[splittedEndDateTime.length-1].trim();
+                const endTime = splittedEndDateTime[splittedEndDateTime.length - 1].trim();
                 const endDateTime = new Date(`${splittedEndDate[1]}/${splittedEndDate[0]}/${splittedEndDate[2]} ${endTime}`);
                 const dwellTime = (Number(endDateTime.getTime()) - Number(startDateTime.getTime())) / 1000;
                 if (startDateTime >= datetime1 && startDateTime < datetime2) {
@@ -107,7 +108,7 @@ const doData = (allData: any[], date1: string, date2: string) => {
                 }
                 case 2: {
                     const pumpData: number[] = []
-                    binData.forEach((data:any) => {
+                    binData.forEach((data: any) => {
                         if (data.pump == 'pump2') {
                             pumpData.push(data);
                         }
@@ -129,7 +130,7 @@ const doData = (allData: any[], date1: string, date2: string) => {
                 }
                 case 7: {
                     const pumpData: any[] = []
-                    binData.forEach((data:any) => {
+                    binData.forEach((data: any) => {
                         if (data.pump == 'pump7') {
                             pumpData.push(data);
                         }
@@ -255,3 +256,125 @@ exports.getPatronasDataFromCsv = (req: any, res: any) => {
             }).end();
         });
 };
+
+exports.getVehicleCountByDwellTimeRange = async (req: any, res: any) => {
+    let { date1, date2 } = req.query;
+    date1 = new Date(moment(date1, 'DD/MM/YYYY').format('MM/DD/YYYY'));
+    date2 = new Date(moment(`${date2} 23:59:59`, 'DD/MM/YYYY hh:mm:ss').format('MM/DD/YYYY hh:mm:ss'));
+    const deviceID = 'f62241e0-edc2-11ea-a72f-7398ea06dc89';
+    try {
+        pool.query(
+            `
+            SELECT CASE
+            WHEN key = '8' THEN 'pump1'
+            WHEN key = '9' THEN 'pump2'
+            WHEN key = '10' THEN 'pump3'
+            WHEN key='15' THEN 'pump7'
+            WHEN key='16' THEN 'pump8'
+            WHEN key='17' THEN 'pump9'
+            END AS "KEY", json_v, ts, long_v, datetime
+            FROM 
+            (select entity_id, key, long_v, json_v, ts,
+            TO_TIMESTAMP(TRUNC(ts/1000)) as datetime
+            from ts_kv 
+            where entity_id=$1 
+            AND key IN ('8', '9', '10', '15', '16', '17')) AS expr_qry
+            ORDER BY ts;
+            `, [deviceID], (error: any, results: any) => {
+            if (error) {
+                console.log(error)
+                res.status(400).json({
+                    status: 400,
+                    message: 'Failed!',
+                    pumpData: []
+                }).end();
+            } else {
+                const data = results.rows;
+
+                const result = countVehicleDataWithDwellTime(data, date1, date2);
+
+                res.status(200).json({
+                    status: 200,
+                    message: 'Successful!',
+                    pumpData: result
+                }).end();
+            }
+        });
+    } catch (error) {
+        throw error;
+    }
+}
+
+const countVehicleDataWithDwellTime = (data: any, date1: Date, date2: Date) => {
+    const results: any = {
+        pump1: [],
+        pump2: [],
+        pump3: [],
+        pump7: [],
+        pump8: [],
+        pump9: [],
+    };
+    let allPumpData = data.map((res: any) => {
+        const { KEY, json_v } = res;
+        let { startTime, endTime, vehicleType } = json_v;
+
+        startTime = splitDateTime(startTime.toString())
+        endTime = splitDateTime(endTime.toString());
+        return {
+            pump: KEY,
+            startTime,
+            endTime,
+            dwellTime: (endTime.getTime() - startTime.getTime()) / 1000, // In Seconds
+            vehicleType,
+        };
+    });
+
+    allPumpData = allPumpData.filter((pumpData: any) => pumpData.startTime >= date1 && pumpData.startTime <= date2);
+    const pumps = ['pump1', 'pump2', 'pump3', 'pump7', 'pump8', 'pump9'];
+    const count = 8;
+    for (var i = 1; i <= count; i++) {
+        let dataByDwellTime = allPumpData.filter((pumpData: any) => pumpData.dwellTime > (60 * (i-1)) && pumpData.dwellTime <= (60 * i));
+        if (i === 8) {
+            dataByDwellTime = allPumpData.filter((pumpData: any) => pumpData.dwellTime >= (60 * 7));
+        }
+        pumps.forEach(pump => {
+            const bin = {
+                vehicleType1: 0,
+                vehicleType2: 0,
+                vehicleType3: 0,
+            }
+            const binPumpData = dataByDwellTime.filter((pumpData: any) => pumpData.pump === pump);
+            binPumpData.forEach((pumpData: any) => {
+                switch (pumpData.vehicleType) {
+                    case 'type1': ++bin.vehicleType1; break;
+                    case 'type2': ++bin.vehicleType2; break;
+                    case 'type3': ++bin.vehicleType3; break;
+                }
+            });
+            switch (pump) {
+                case 'pump1':
+                    results.pump1.push(bin); break;
+                case 'pump2':
+                    results.pump2.push(bin); break;
+                case 'pump3':
+                    results.pump3.push(bin); break;
+                case 'pump7':
+                    results.pump7.push(bin); break;
+                case 'pump8':
+                    results.pump8.push(bin); break;
+                case 'pump9':
+                    results.pump9.push(bin); break;
+                default:
+                    break;
+            }
+        });
+    }
+    return results;
+}
+
+const splitDateTime = (date: string) => {
+    const splittedDateTime = date.split(' ');
+    const splittedDate = moment(splittedDateTime[0], 'DD/MM/YYYY').format('MM/DD/YYYY');
+    const splittedTime = splittedDateTime[splittedDateTime.length - 1].trim();
+    return new Date(`${splittedDate} ${splittedTime}`);
+}

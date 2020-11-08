@@ -12,4 +12,7 @@ router.route('/getPatronasDataFromCsv')
     // .get(authenticateJWT)
     .get(controller.getPatronasDataFromCsv);
 
+router.route('/getVehicleCountByDwellTimeRange')
+    .get(controller.getVehicleCountByDwellTimeRange);
+
 module.exports = router;
