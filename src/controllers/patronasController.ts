@@ -261,17 +261,17 @@ exports.getVehicleCountByDwellTimeRange = async (req: any, res: any) => {
     let { date1, date2 } = req.query;
     date1 = new Date(moment(date1, 'DD/MM/YYYY').format('MM/DD/YYYY'));
     date2 = new Date(moment(`${date2}`, 'DD/MM/YYYY').add(24, 'hours').format('MM/DD/YYYY'));
-    queryDataFromThingsBoard('tb', 'vehicleCount', date1, date2, res);
+    queryDataAndReturnResult('tb', 'vehicleCount', date1, date2, res);
 }
 
 exports.getAnomalyData = (req: any, res: any) => {
     let { date1, date2 } = req.query;
     date1 = new Date(moment(date1, 'DD/MM/YYYY').format('MM/DD/YYYY'));
     date2 = new Date(moment(`${date2}`, 'DD/MM/YYYY').add(24, 'hours').format('MM/DD/YYYY'));
-    queryDataFromThingsBoard('tb', 'anomaly', date1, date2, res);
+    queryDataAndReturnResult('tb', 'anomaly', date1, date2, res);
 }
 
-const queryDataFromThingsBoard = (dataSource: string, type: string, date1: Date, date2: Date, res: any) => {
+const queryDataAndReturnResult = (dataSource: string, type: string, date1: Date, date2: Date, res: any) => {
     if (dataSource === 'csv') {
         var csvData: any[] = [];
         fs.createReadStream(__dirname + '/../data/pumpCsv.csv')
@@ -284,7 +284,15 @@ const queryDataFromThingsBoard = (dataSource: string, type: string, date1: Date,
             })
             .on('end', () => {
                 console.log('CSV file successfully processed');
-                const result = calculateAnomaly(csvData, date1, date2);
+                let result: any;
+                switch (type) {
+                    case 'anomaly': {
+                        result = calculateAnomaly(csvData, date1, date2); break;
+                    }
+                    case 'vehicleCount': {
+                        result = countVehicleDataWithDwellTime(csvData, date1, date2); break;
+                    }
+                }
                 res.status(200).json({
                     status: 200,
                     message: 'Successful!',
@@ -397,8 +405,8 @@ const countVehicleDataWithDwellTime = (data: any, date1: Date, date2: Date) => {
         const { KEY, json_v } = res;
         let { startTime, endTime, vehicleType } = json_v;
 
-        startTime = splitDateTime(startTime.toString())
-        endTime = splitDateTime(endTime.toString());
+        startTime = splitDateTime(startTime + '')
+        endTime = splitDateTime(endTime + '');
         return {
             pump: KEY,
             startTime,
