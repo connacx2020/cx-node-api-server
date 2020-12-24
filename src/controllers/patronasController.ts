@@ -549,3 +549,77 @@ exports.getTurnInDataFromCsv = (req: any, res: any) => {
                 });
         });
 }
+
+exports.getTurnInData = (req: any, res: any) => {
+    let { date1, date2 } = req.query;
+    date1 = new Date(moment(date1, 'DD/MM/YYYY').format('MM/DD/YYYY'));
+    date2 = new Date(moment(`${date2}`, 'DD/MM/YYYY').add(24, 'hours').format('MM/DD/YYYY'));
+
+    const deviceID = 'a8943e30-44e1-11eb-bb2e-7398ea06dc89';
+    try {
+        pool.query(
+            `
+            SELECT CASE
+            WHEN key = '35' THEN 'turnin_type2_data'
+            WHEN key = '36' THEN 'turnin_type1_data'
+            END AS "KEY", json_v, ts, long_v, datetime
+            FROM 
+            (select entity_id, key, long_v, json_v, ts,
+            TO_TIMESTAMP(TRUNC(ts/1000)) as datetime
+            from ts_kv 
+            where entity_id=$1
+            AND key IN ('35', '36')) AS expr_qry
+            ORDER BY ts;`, [deviceID], (error: any, results: any) => {
+            if (error) {
+                console.log(error);
+                res.status(400).json({
+                    status: 400,
+                    message: 'Failed!',
+                    result: []
+                }).end();
+            } else {
+                const data = results.rows;
+
+                let turnInType1DataTemp = {
+                    total: 0,
+                    turnin: 0
+                };
+                let turnInType2DataTemp = {
+                    total: 0,
+                    turnin: 0
+                };
+                data.forEach((turnInData: any) => {
+                    const dateTime = new Date(moment(turnInData.json_v.time, 'DD/MM/YYYY').format('MM/DD/YYYY'));
+                    if (dateTime >= date1 && dateTime < date2) {
+                        if (turnInData.KEY === 'turnin_type1_data') {
+                            turnInType1DataTemp.total += Number(turnInData.total.toString());
+                            turnInType1DataTemp.turnin += Number(turnInData.turnin.toString());
+                        } else {
+                            turnInType2DataTemp.total += Number(turnInData.json_v.total.toString());
+                            turnInType2DataTemp.turnin += Number(turnInData.json_v.turnin.toString());
+                        }
+                    }
+                });
+
+                res.status(200).json({
+                    status: 200,
+                    message: 'Successful!',
+                    result: {
+                        turnin_type1_data: {
+                            total: turnInType1DataTemp.total,
+                            turnin: turnInType1DataTemp.turnin,
+                            turnin_rate: Number(((turnInType1DataTemp.turnin / turnInType1DataTemp.total) * 100).toFixed(2))
+                        },
+                        turnin_type2_data: {
+                            total: turnInType2DataTemp.total,
+                            turnin: turnInType2DataTemp.turnin,
+                            turnin_rate: Number(((turnInType2DataTemp.turnin / turnInType2DataTemp.total) * 100).toFixed(2))
+                        }
+                    }
+                }).end();
+            }
+        });
+    } catch (err) {
+        console.log(err);
+    }
+}

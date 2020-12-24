@@ -20,4 +20,7 @@ router.route('/getAnomalyData')
 
 router.route('/getTurnInDataFromCsv')
     .get(controller.getTurnInDataFromCsv);
+
+router.route('/getTurnInData')
+    .get(controller.getTurnInData);
 module.exports = router;
