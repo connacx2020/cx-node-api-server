@@ -18,4 +18,6 @@ router.route('/getVehicleCountByDwellTimeRange')
 router.route('/getAnomalyData')
     .get(controller.getAnomalyData);
 
+router.route('/getTurnInDataFromCsv')
+    .get(controller.getTurnInDataFromCsv);
 module.exports = router;

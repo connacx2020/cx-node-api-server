@@ -483,3 +483,69 @@ const filterDataByDate = (data: any, date1: Date, date2: Date) => {
     });
     return result.filter((pumpData: any) => pumpData.startTime >= date1 && pumpData.startTime <= date2)
 }
+
+exports.getTurnInDataFromCsv = (req: any, res: any) => {
+    let { date1, date2 } = req.query;
+    date1 = new Date(moment(date1, 'DD/MM/YYYY').format('MM/DD/YYYY'));
+    date2 = new Date(moment(`${date2}`, 'DD/MM/YYYY').add(24, 'hours').format('MM/DD/YYYY'));
+
+    let turnInType1: any[] = [];
+    let turnInType2: any[] = [];
+
+    fs.createReadStream(__dirname + '/../data/turnInDataType1.csv')
+        .pipe(csv())
+        .on('data', (row: any) => {
+            turnInType1.push(row);
+        })
+        .on('end', () => {
+            console.log('Type1 CSV file successfully processed');
+
+            fs.createReadStream(__dirname + '/../data/turnInDataType2.csv')
+                .pipe(csv())
+                .on('data', (row: any) => {
+                    turnInType2.push(row);
+                })
+                .on('end', () => {
+                    console.log('Type2 CSV file successfully processed');
+                    let turnInType1DataTemp = {
+                        total: 0,
+                        turnin: 0
+                    };
+                    let turnInType2DataTemp = {
+                        total: 0,
+                        turnin: 0
+                    };
+                    turnInType1.forEach(turnInData => {
+                        const dateTime = new Date(moment(turnInData.time, 'DD/MM/YYYY').format('MM/DD/YYYY'));
+                        if (dateTime >= date1 && dateTime < date2) {
+                            turnInType1DataTemp.total += Number(turnInData.total.toString());
+                            turnInType1DataTemp.turnin += Number(turnInData.turnin.toString());
+                        }
+                    });
+                    turnInType2.forEach(turnInData => {
+                        const dateTime = new Date(moment(turnInData.time, 'DD/MM/YYYY').format('MM/DD/YYYY'));
+                        if (dateTime >= date1 && dateTime < date2) {
+                            console.log('Data matched')
+                            turnInType2DataTemp.total += Number(turnInData.total.toString());
+                            turnInType2DataTemp.turnin += Number(turnInData.turnin.toString());
+                        }
+                    });
+                    res.status(200).json({
+                        status: 200,
+                        message: 'Successful!',
+                        turnInRateData: {
+                            turnIn_type1_data: {
+                                total: turnInType1DataTemp.total,
+                                turnin: turnInType1DataTemp.turnin,
+                                turnin_rate: Number(((turnInType1DataTemp.turnin / turnInType1DataTemp.total) * 100).toFixed(2))
+                            },
+                            turnIn_type2_data: {
+                                total: turnInType2DataTemp.total,
+                                turnin: turnInType2DataTemp.turnin,
+                                turnin_rate: Number(((turnInType2DataTemp.turnin / turnInType2DataTemp.total) * 100).toFixed(2))
+                            }
+                        }
+                    }).end();
+                });
+        });
+}
