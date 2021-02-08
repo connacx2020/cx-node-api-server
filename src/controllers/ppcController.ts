@@ -11,7 +11,6 @@ exports.getPPCByDateRange = (req: any, res: any) => {
         if (error) {
             throw error;
         }
-        console.log(results);
         res.status(200).json({
             status: 200,
             message: 'Successful!',

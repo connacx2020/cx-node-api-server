@@ -54,20 +54,18 @@ const getQuery = (type: string, door: string) => {
         case 'b2': doorType = " = 'B2'"; break;
         default: doorType = " != '0'"; break
     }
-
-    return `
-    SELECT
+    return `SELECT
     CASE
-    WHEN key = 43 THEN 'Neutral'
-    WHEN key = 42 THEN 'Sad'
-    WHEN key = 41 THEN 'Happy'
-    WHEN key = 48 THEN 'Angry'
-    WHEN key = 37 THEN 'Male'
-    WHEN key = 40 THEN 'Female'
-    WHEN key = 44 THEN 'Children'
-    WHEN key = 47 THEN 'Young'
-    WHEN key = 45 THEN 'Middle'
-    WHEN key = 46 THEN 'Senior'
+        WHEN key = 43 THEN 'Neutral'
+        WHEN key = 42 THEN 'Sad'
+        WHEN key = 41 THEN 'Happy'
+        WHEN key = 48 THEN 'Angry'
+        WHEN key = 37 THEN 'Male'
+        WHEN key = 40 THEN 'Female'
+        WHEN key = 44 THEN 'Children'
+        WHEN key = 47 THEN 'Young'
+        WHEN key = 45 THEN 'Middle'
+        WHEN key = 46 THEN 'Senior'
     END AS "Key",
     COUNT(CASE
         WHEN key = 43 THEN 'Neutral'
@@ -82,8 +80,7 @@ const getQuery = (type: string, door: string) => {
         WHEN key = 46 THEN 'Senior'
          END) AS "COUNT(Key)"
     FROM
-    (select entity_id,
-    key,
+    (select entity_id as door, key,
     TO_TIMESTAMP(TRUNC(ts/1000)) + INTERVAL '8 hour' AS datetime,
     long_v
     FROM ts_kv
@@ -96,36 +93,10 @@ const getQuery = (type: string, door: string) => {
     WHERE datetime >= $1
     AND datetime <= $2
     AND CASE
-        WHEN key = 43 THEN 'Neutral'
-        WHEN key = 42 THEN 'Sad'
-        WHEN key = 41 THEN 'Happy'
-        WHEN key = 48 THEN 'Angry'
-        WHEN key = 37 THEN 'Male'
-        WHEN key = 40 THEN 'Female'
-        WHEN key = 44 THEN 'Children'
-        WHEN key = 47 THEN 'Young'
-        WHEN key = 45 THEN 'Middle'
-        WHEN key = 46 THEN 'Senior'
-    END != '0'
-    AND CASE
-        WHEN entity_id = '${config.deviceIDs.east}' THEN 'East'
-        WHEN entity_id = '${config.deviceIDs.west}' THEN 'West'
-        WHEN entity_id = '${config.deviceIDs.circle}' THEN 'Circle'
-        WHEN entity_id ='${config.deviceIDs.b2}' THEN 'B2'
+        WHEN door = '${config.deviceIDs.east}' THEN 'East'
+        WHEN door = '${config.deviceIDs.west}' THEN 'West'
+        WHEN door = '${config.deviceIDs.circle}' THEN 'Circle'
+        WHEN door ='${config.deviceIDs.b2}' THEN 'B2'
     END ${doorType}
-    GROUP BY CASE
-    WHEN key = 43 THEN 'Neutral'
-    WHEN key = 42 THEN 'Sad'
-    WHEN key = 41 THEN 'Happy'
-    WHEN key = 48 THEN 'Angry'
-    WHEN key = 37 THEN 'Male'
-    WHEN key = 40 THEN 'Female'
-    WHEN key = 44 THEN 'Children'
-    WHEN key = 47 THEN 'Young'
-    WHEN key = 45 THEN 'Middle'
-    WHEN key = 46 THEN 'Senior'
-    END
-    ORDER BY "COUNT(Key)" DESC
-    LIMIT 10000;
-    `
+    GROUP BY key;`
 }
