@@ -1,4 +1,5 @@
 import pool from '../utils/dbClient';
+import { config } from '../utils/config';
 
 exports.getPPCByDateRange = (req: any, res: any) => {
     const { door, date1, date2 } = req.query;
@@ -9,47 +10,16 @@ exports.getPPCByDateRange = (req: any, res: any) => {
         case 'west': doorType = " = 'West'"; break;
         case 'circle': doorType = " = 'Circle'"; break;
         case 'b2': doorType = " = 'B2'"; break;
-        default : doorType = " != '0'"; break;
+        default: doorType = " != '0'"; break;
     }
     const dateTime1 = `${date1} 00:00:00`
     const dateTime2 = `${date2} 23:59:59`
-    pool.query(
-        `
-        SELECT CASE
-        WHEN door = 'visitor_count_door1' THEN 'East'
-        WHEN door = 'visitor_count_door2' THEN 'West'
-        WHEN door = 'visitor_count_door3' THEN 'Circle'
-        WHEN door='visitor_count_door4' THEN 'B2'
-        END AS "DOOR",
-        SUM(_data) AS "SUM(_data)"
-        FROM
-        (select entity_id,
-            key as door,
-            long_v as _data,
-            TO_TIMESTAMP(TRUNC(CAST(ts AS bigint) / 1000)) as datetime
-        from public.ts_kv
-        where entity_id in ('1ea296c156d41b083816530eccc01ed',
-        '1ea297011afa0a083816530eccc01ed')
-        and key IN ('visitor_count_door1',
-            'visitor_count_door2',
-            'visitor_count_door3',
-            'visitor_count_door4')
-        group by key, entity_id, long_v, ts, datetime
-        order by datetime desc) AS expr_qry
-        WHERE datetime >= $1
-        AND datetime <= $2
-        AND CASE
-        WHEN door = 'visitor_count_door1' THEN 'East'
-        WHEN door = 'visitor_count_door2' THEN 'West'
-        WHEN door = 'visitor_count_door3' THEN 'Circle'
-        WHEN door='visitor_count_door4' THEN 'B2'
-        END ${doorType}
-        GROUP BY door
-        LIMIT 50000;
-        `, [dateTime1, dateTime2], (error: any, results: any) => {
+    const query = getQuery(doorType);
+    pool.query(query, [dateTime1, dateTime2], (error: any, results: any) => {
         if (error) {
             throw error;
         }
+        console.log(results);
         res.status(200).json({
             status: 200,
             message: 'Successful!',
@@ -67,44 +37,12 @@ exports.getPPCByTimeRange = (req: any, res: any) => {
         case 'west': doorType = " = 'West'"; break;
         case 'circle': doorType = " = 'Circle'"; break;
         case 'b2': doorType = " = 'B2'"; break;
-        default : doorType = " != '0'"; break;
+        default: doorType = " != '0'"; break;
     }
     const dateTime1 = `${date} ${time1}`
     const dateTime2 = `${date} ${time2}`
-    pool.query(
-        `
-        SELECT CASE
-        WHEN door = 'visitor_count_door1' THEN 'East'
-        WHEN door = 'visitor_count_door2' THEN 'West'
-        WHEN door = 'visitor_count_door3' THEN 'Circle'
-        WHEN door='visitor_count_door4' THEN 'B2'
-        END AS "DOOR",
-        SUM(_data) AS "SUM(_data)"
-        FROM
-        (select entity_id,
-            key as door,
-            long_v as _data,
-            TO_TIMESTAMP(TRUNC(ts/1000)) + INTERVAL '8 hour' as datetime
-        from public.ts_kv
-        where entity_id in ('1ea296c156d41b083816530eccc01ed',
-        '1ea297011afa0a083816530eccc01ed')
-        and key IN ('visitor_count_door1',
-            'visitor_count_door2',
-            'visitor_count_door3',
-            'visitor_count_door4')
-        group by key, entity_id, long_v, ts, datetime
-        order by datetime desc) AS expr_qry
-        WHERE datetime >= $1
-        AND datetime <= $2
-        AND CASE
-        WHEN door = 'visitor_count_door1' THEN 'East'
-        WHEN door = 'visitor_count_door2' THEN 'West'
-        WHEN door = 'visitor_count_door3' THEN 'Circle'
-        WHEN door='visitor_count_door4' THEN 'B2'
-        END ${doorType}
-        GROUP BY door
-        LIMIT 50000;
-        `, [dateTime1, dateTime2], (error: any, results: any) => {
+    const query = getQuery(doorType);
+    pool.query(query, [dateTime1, dateTime2], (error: any, results: any) => {
         if (error) {
             throw error;
         }
@@ -114,4 +52,37 @@ exports.getPPCByTimeRange = (req: any, res: any) => {
             data: results.rows
         }).end();
     });
+}
+
+const getQuery = (doorType: string) => {
+    return `SELECT CASE
+    WHEN door = '${config.deviceIDs.east}' THEN 'East'
+    WHEN door = '${config.deviceIDs.west}' THEN 'West'
+    WHEN door = '${config.deviceIDs.circle}' THEN 'Circle'
+    WHEN door='${config.deviceIDs.b2}' THEN 'B2'
+    END AS "DOOR",
+    SUM(_data) AS "SUM(_data)"
+    FROM
+    (select entity_id,
+        key as door,
+        long_v as _data,
+        TO_TIMESTAMP(TRUNC(ts/1000)) + INTERVAL '8 hour' as datetime
+    from public.ts_kv
+    where entity_id IN ('${config.deviceIDs.east}',
+    '${config.deviceIDs.west}',
+    '${config.deviceIDs.circle}',
+    '${config.deviceIDs.b2}')
+    and key=38
+    group by key, entity_id, long_v, ts, datetime
+    order by datetime desc) AS expr_qry
+    WHERE datetime >= $1
+    AND datetime <= $2
+    AND CASE
+    WHEN door = '${config.deviceIDs.east}' THEN 'East'
+    WHEN door = '${config.deviceIDs.west}' THEN 'West'
+    WHEN door = '${config.deviceIDs.circle}' THEN 'Circle'
+    WHEN door='${config.deviceIDs.b2}' THEN 'B2'
+    END ${doorType}
+    GROUP BY door
+    LIMIT 50000;`
 }
